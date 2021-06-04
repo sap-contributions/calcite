@@ -95,9 +95,9 @@ tasks.validateBeforeBuildingReleaseArtifacts {
     dependsOn(rat)
 }
 
-val String.v: String get() = rootProject.extra["$this.version"] as String
+val String.v: String get() = "1.26.0-jdbc-hints"
 
-val buildVersion = "calcite".v + releaseParams.snapshotSuffix
+val buildVersion = "".v
 
 println("Building Apache Calcite $buildVersion")
 
