@@ -122,9 +122,9 @@ tasks.validateBeforeBuildingReleaseArtifacts {
     dependsOn(rat)
 }
 
-val String.v: String get() = rootProject.extra["$this.version"] as String
+val String.v: String get() = "1.27.0-jdbc-hints"
 
-val buildVersion = "calcite".v + releaseParams.snapshotSuffix
+val buildVersion = "".v
 
 println("Building Apache Calcite $buildVersion")
 
@@ -476,7 +476,7 @@ allprojects {
             apply(plugin = "com.github.vlsi.jandex")
 
             project.configure<com.github.vlsi.jandex.JandexExtension> {
-                toolVersion.set("jandex".v)
+                toolVersion.set("2.2.3.Final")
                 skipIndexFileGeneration()
             }
         }
