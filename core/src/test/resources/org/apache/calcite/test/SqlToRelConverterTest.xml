@@ -1053,9 +1053,9 @@ where exists (select * from emp
   </TestCase>
   <TestCase name="testCorrelationInProjectionWithCorrelatedProjection">
     <Resource name="sql">
-      <![CDATA[select cardinality(arr) from (
-  select array(select e.deptno) arr from (
-    select deptno, ename from emp) e)]]>
+      <![CDATA[select cardinality(arr) from
+(select array(select e.deptno) arr
+from (select deptno, ename from emp) e)]]>
     </Resource>
     <Resource name="plan">
       <![CDATA[
