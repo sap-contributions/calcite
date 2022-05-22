@@ -528,6 +528,11 @@ public class JdbcRules {
       return false;
     }
 
+    @Override public boolean matches(RelOptRuleCall call) {
+      Project project = call.rel(0);
+      return project.getVariablesSet().isEmpty();
+    }
+
     @Override public @Nullable RelNode convert(RelNode rel) {
       final Project project = (Project) rel;
 
@@ -555,7 +560,7 @@ public class JdbcRules {
         List<? extends RexNode> projects,
         RelDataType rowType,
         Set<CorrelationId> variablesSet) {
-      super(cluster, traitSet, ImmutableList.of(), input, projects, rowType, variablesSet);
+      super(cluster, traitSet, ImmutableList.of(), input, projects, rowType, ImmutableSet.of());
       assert getConvention() instanceof JdbcConvention;
     }
 
