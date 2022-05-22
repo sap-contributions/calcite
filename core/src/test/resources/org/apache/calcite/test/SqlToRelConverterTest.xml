@@ -1186,9 +1186,9 @@ LogicalAggregate(group=[{}], EXPR$0=[SUM($0)])
   </TestCase>
   <TestCase name="testCorrelationInProjectionWithCorrelatedProjection">
     <Resource name="sql">
-      <![CDATA[select cardinality(arr) from (
-  select array(select e.deptno) arr from (
-    select deptno, ename from emp) e)]]>
+      <![CDATA[select cardinality(arr) from
+(select array(select e.deptno) arr
+from (select deptno, ename from emp) e)]]>
     </Resource>
     <Resource name="plan">
       <![CDATA[
