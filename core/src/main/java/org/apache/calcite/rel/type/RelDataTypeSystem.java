@@ -16,6 +16,8 @@
  */
 package org.apache.calcite.rel.type;
 
+import org.apache.calcite.linq4j.tree.Expression;
+import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql.type.SqlTypeUtil;
 import org.apache.calcite.util.Glossary;
@@ -523,4 +525,5 @@ public interface RelDataTypeSystem {
   default TimeFrameSet deriveTimeFrameSet(TimeFrameSet frameSet) {
     return frameSet;
   }
+
 }

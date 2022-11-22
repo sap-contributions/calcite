@@ -32,16 +32,7 @@ import org.apache.calcite.avatica.util.TimeUnitRange;
 import org.apache.calcite.interpreter.Context;
 import org.apache.calcite.interpreter.Row;
 import org.apache.calcite.interpreter.Scalar;
-import org.apache.calcite.linq4j.AbstractEnumerable;
-import org.apache.calcite.linq4j.Enumerable;
-import org.apache.calcite.linq4j.EnumerableDefaults;
-import org.apache.calcite.linq4j.Enumerator;
-import org.apache.calcite.linq4j.ExtendedEnumerable;
-import org.apache.calcite.linq4j.JoinType;
-import org.apache.calcite.linq4j.Linq4j;
-import org.apache.calcite.linq4j.MemoryFactory;
-import org.apache.calcite.linq4j.QueryProvider;
-import org.apache.calcite.linq4j.Queryable;
+import org.apache.calcite.linq4j.*;
 import org.apache.calcite.linq4j.function.EqualityComparer;
 import org.apache.calcite.linq4j.function.Function0;
 import org.apache.calcite.linq4j.function.Function1;
@@ -182,6 +173,8 @@ public enum BuiltInMethod {
   SCHEMA_PLUS_ADD_TABLE(SchemaPlus.class, "add", String.class, Table.class),
   SCHEMA_PLUS_REMOVE_TABLE(SchemaPlus.class, "removeTable", String.class),
   SCHEMA_PLUS_UNWRAP(SchemaPlus.class, "unwrap", Class.class),
+  SCHEMAS_GET_EXISTING_SUB_SCHEMA(Schemas.class, "getExistingSubSchema",
+      SchemaPlus.class, String.class),
   SCHEMAS_ENUMERABLE_SCANNABLE(Schemas.class, "enumerable",
       ScannableTable.class, DataContext.class),
   SCHEMAS_ENUMERABLE_FILTERABLE(Schemas.class, "enumerable",
@@ -192,6 +185,7 @@ public enum BuiltInMethod {
       SchemaPlus.class, Class.class, String.class),
   REFLECTIVE_SCHEMA_GET_TARGET(ReflectiveSchema.class, "getTarget"),
   DATA_CONTEXT_GET(DataContext.class, "get", String.class),
+  DATA_CONTEXT_GET_TYPED(DataContext.class, "get", String.class, Class.class),
   DATA_CONTEXT_GET_ROOT_SCHEMA(DataContext.class, "getRootSchema"),
   JDBC_SCHEMA_DATA_SOURCE(JdbcSchema.class, "getDataSource"),
   ROW_VALUE(Row.class, "getObject", int.class),
@@ -235,6 +229,8 @@ public enum BuiltInMethod {
   MERGE_JOIN(EnumerableDefaults.class, "mergeJoin", Enumerable.class,
       Enumerable.class, Function1.class, Function1.class, Predicate2.class, Function2.class,
       JoinType.class, Comparator.class, EqualityComparer.class),
+  MERGE_JOIN_NOT_NULL_ENUMERABLE(
+      MergeJoinNotNullEnumerable.class, "create", Enumerable.class, Function1.class),
   SLICE0(Enumerables.class, "slice0", Enumerable.class),
   SEMI_JOIN(EnumerableDefaults.class, "semiJoin", Enumerable.class,
       Enumerable.class, Function1.class, Function1.class,

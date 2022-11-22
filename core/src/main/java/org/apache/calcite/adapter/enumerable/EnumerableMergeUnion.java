@@ -22,6 +22,7 @@ import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.linq4j.tree.ParameterExpression;
 import org.apache.calcite.plan.RelOptCluster;
+import org.apache.calcite.plan.RelTrait;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelNode;
@@ -47,7 +48,7 @@ public class EnumerableMergeUnion extends EnumerableUnion {
       throw new IllegalArgumentException("EnumerableMergeUnion with no collation");
     }
     for (RelNode input : inputs) {
-      final RelCollation inputCollation = input.getTraitSet().getCollation();
+      final RelTrait inputCollation = input.getTraitSet().getCollation();
       if (inputCollation == null || !inputCollation.satisfies(collation)) {
         throw new IllegalArgumentException("EnumerableMergeUnion input does "
             + "not satisfy collation. EnumerableMergeUnion collation: "

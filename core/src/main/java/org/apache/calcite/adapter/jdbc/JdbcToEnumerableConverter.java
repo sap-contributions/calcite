@@ -145,7 +145,7 @@ public class JdbcToEnumerableConverter
           Expressions.parameter(Object.class, builder.newName("value"));
       builder.add(Expressions.declare(Modifier.FINAL, value_, null));
       generateGet(implementor, physType, builder, resultSet_, 0, value_,
-          calendar_, calendarPolicy);
+          calendar_, calendarPolicy, jdbcConvention.dialect);
       builder.add(Expressions.return_(null, value_));
     } else {
       final Expression values_ =
@@ -155,7 +155,7 @@ public class JdbcToEnumerableConverter
       for (int i = 0; i < fieldCount; i++) {
         generateGet(implementor, physType, builder, resultSet_, i,
             Expressions.arrayIndex(values_, Expressions.constant(i)),
-            calendar_, calendarPolicy);
+            calendar_, calendarPolicy, jdbcConvention.dialect);
       }
       builder.add(
           Expressions.return_(null, values_));
@@ -268,7 +268,7 @@ public class JdbcToEnumerableConverter
   private static void generateGet(EnumerableRelImplementor implementor,
       PhysType physType, BlockBuilder builder, ParameterExpression resultSet_,
       int i, Expression target, @Nullable Expression calendar_,
-      SqlDialect.CalendarPolicy calendarPolicy) {
+      SqlDialect.CalendarPolicy calendarPolicy, SqlDialect dialect) {
     final Primitive primitive = Primitive.ofBoxOr(physType.fieldClass(i));
     final RelDataType fieldType =
         physType.getRowType().getFieldList().get(i).getType();
@@ -301,35 +301,37 @@ public class JdbcToEnumerableConverter
     default:
       break;
     }
-    final Expression source;
-    switch (sqlTypeName) {
-    case DATE:
-    case TIME:
-    case TIMESTAMP:
-      source =
-          Expressions.call(
-              getMethod(sqlTypeName, fieldType.isNullable(), offset),
-              Expressions.<Expression>list()
-                  .append(
-                      Expressions.call(resultSet_,
-                          getMethod2(sqlTypeName), dateTimeArgs))
-                  .appendIf(offset, getTimeZoneExpression(implementor)));
-      break;
-    case ARRAY:
-      final Expression x =
-          Expressions.convert_(
-              Expressions.call(resultSet_, jdbcGetMethod(primitive),
-                  Expressions.constant(i + 1)),
-              java.sql.Array.class);
-      source = Expressions.call(BuiltInMethod.JDBC_ARRAY_TO_LIST.method, x);
-      break;
-    case NULL:
-      source = RexImpTable.NULL_EXPR;
-      break;
-    default:
-      source =
-          Expressions.call(resultSet_, jdbcGetMethod(primitive),
-              Expressions.constant(i + 1));
+    Expression source = dialect.resultSetGet(sqlTypeName,resultSet_,Expressions.constant(i + 1));
+    if ( source == null) {
+      switch (sqlTypeName) {
+      case DATE:
+      case TIME:
+      case TIMESTAMP:
+        source =
+            Expressions.call(
+                getMethod(sqlTypeName, fieldType.isNullable(), offset),
+                Expressions.<Expression>list()
+                    .append(
+                        Expressions.call(resultSet_,
+                            getMethod2(sqlTypeName), dateTimeArgs))
+                    .appendIf(offset, getTimeZoneExpression(implementor)));
+        break;
+      case ARRAY:
+        final Expression x =
+            Expressions.convert_(
+                Expressions.call(resultSet_, jdbcGetMethod(primitive),
+                    Expressions.constant(i + 1)),
+                java.sql.Array.class);
+        source = Expressions.call(BuiltInMethod.JDBC_ARRAY_TO_LIST.method, x);
+        break;
+      case NULL:
+        source = RexImpTable.NULL_EXPR;
+        break;
+      default:
+        source =
+            Expressions.call(resultSet_, jdbcGetMethod(primitive),
+                Expressions.constant(i + 1));
+      }
     }
     builder.add(
         Expressions.statement(

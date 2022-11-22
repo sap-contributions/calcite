@@ -40,17 +40,7 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelRoot;
 import org.apache.calcite.rel.RelShuttleImpl;
 import org.apache.calcite.rel.SingleRel;
-import org.apache.calcite.rel.core.Aggregate;
-import org.apache.calcite.rel.core.AggregateCall;
-import org.apache.calcite.rel.core.Collect;
-import org.apache.calcite.rel.core.CorrelationId;
-import org.apache.calcite.rel.core.Filter;
-import org.apache.calcite.rel.core.Join;
-import org.apache.calcite.rel.core.JoinInfo;
-import org.apache.calcite.rel.core.JoinRelType;
-import org.apache.calcite.rel.core.Project;
-import org.apache.calcite.rel.core.RelFactories;
-import org.apache.calcite.rel.core.Sort;
+import org.apache.calcite.rel.core.*;
 import org.apache.calcite.rel.hint.HintStrategyTable;
 import org.apache.calcite.rel.hint.Hintable;
 import org.apache.calcite.rel.hint.RelHint;
@@ -217,6 +207,7 @@ import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
+import java.util.stream.Collectors;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.collect.ImmutableList.toImmutableList;
@@ -2513,6 +2504,36 @@ public class SqlToRelConverter {
     }
   }
 
+
+  /**
+   * Recursively add CorrelationId to Project$variablesSet.
+   * @param root RelNode
+   * @param correlationUse CorrelationUse
+   * @param relBuilder RelBuilder
+   * @return Equivalent RelNode that only be added CorrelationId to Project$variablesSet
+   */
+  private RelNode addCorrelation(RelNode root,
+      CorrelationUse correlationUse,
+      RelBuilder relBuilder) {
+    if (root instanceof Project) {
+      // correlation variables have been normalized in p.r, we should use expressions
+      // in p.r instead of the original exprs
+      Project project = (Project) root;
+      return relBuilder.push(root.getInput(0))
+          .projectNamed(project.getProjects(),
+              project.getRowType().getFieldNames(),
+              true,
+              ImmutableSet.of(correlationUse.id))
+          .build();
+    } else {
+      // Recursively process child nodes
+      List<RelNode> childList = root.getInputs().stream()
+          .map(r -> addCorrelation(r, correlationUse, relBuilder))
+          .collect(Collectors.toList());
+      return root.copy(root.getTraitSet(), childList);
+    }
+  }
+
   private void convertUnnest(Blackboard bb, SqlCall call, @Nullable List<String> fieldNames) {
     final List<SqlNode> nodes = call.getOperandList();
     final SqlUnnestOperator operator = (SqlUnnestOperator) call.getOperator();
@@ -2527,11 +2548,20 @@ public class SqlToRelConverter {
     });
     RelNode child =
         (null != bb.root) ? bb.root : LogicalValues.createOneRow(cluster);
+
+    RelNode newChild;
+    final CorrelationUse correlationUse = getCorrelationUse(bb, child);
+    if (correlationUse != null && !(child instanceof Collect)) {
+      newChild = addCorrelation(child, correlationUse, relBuilder);
+    } else {
+      newChild = child;
+    }
+
     RelNode uncollect;
     try {
       if (validator().config().conformance().allowAliasUnnestItems()) {
         uncollect = relBuilder
-            .push(child)
+            .push(newChild)
             .project(exprs)
             .uncollect(requireNonNull(fieldNames, "fieldNames"), operator.withOrdinality)
             .build();
@@ -2539,7 +2569,7 @@ public class SqlToRelConverter {
         // REVIEW danny 2020-04-26: should we unify the normal field aliases and
         // the item aliases?
         uncollect = relBuilder
-            .push(child)
+            .push(newChild)
             .project(exprs)
             .uncollect(Collections.emptyList(), operator.withOrdinality)
             .let(r -> fieldNames == null ? r : r.rename(fieldNames))
@@ -3597,42 +3627,43 @@ public class SqlToRelConverter {
         assert !aggConverter.inOver;
       }
 
-      // compute inputs to the aggregator
-      final PairList<RexNode, @Nullable String> preExprs;
-      if (aggConverter.convertedInputExprs.isEmpty()) {
-        // Special case for COUNT(*), where we can end up with no inputs
-        // at all.  The rest of the system doesn't like 0-tuples, so we
-        // select a dummy constant here.
-        final RexNode zero = rexBuilder.makeExactLiteral(BigDecimal.ZERO);
-        preExprs = PairList.of(zero, null);
-      } else {
-        preExprs = aggConverter.convertedInputExprs;
-      }
+      if (!( aggConverter.convertedInputExprs.isEmpty() && RelOptUtil.hasCalcViewHint(bb.root()))) {
+        // compute inputs to the aggregator
+        final PairList<RexNode, @Nullable String> preExprs;
+        if (aggConverter.convertedInputExprs.isEmpty()) {
+          // Special case for COUNT(*), where we can end up with no inputs
+          // at all.  The rest of the system doesn't like 0-tuples, so we
+          // select a dummy constant here.
+          final RexNode zero = rexBuilder.makeExactLiteral(BigDecimal.ZERO);
+          preExprs = PairList.of(zero, null);
+        } else {
+          preExprs = aggConverter.convertedInputExprs;
+        }
 
-      final RelNode inputRel = bb.root();
+        final RelNode inputRel = bb.root();
 
-      // Project the expressions required by agg and having.
-      RelNode intermediateProject = relBuilder.push(inputRel)
-          .projectNamed(preExprs.leftList(), preExprs.rightList(), false)
-          .build();
-      final RelNode r2;
-      // deal with correlation
-      final CorrelationUse p = getCorrelationUse(bb, intermediateProject);
-      if (p != null) {
-        assert p.r instanceof Project;
-        // correlation variables have been normalized in p.r, we should use expressions
-        // in p.r instead of the original exprs
-        Project project1 = (Project) p.r;
-        r2 = relBuilder.push(bb.root())
-            .projectNamed(project1.getProjects(), project1.getRowType().getFieldNames(),
-                true, ImmutableSet.of(p.id))
+        // Project the expressions required by agg and having.
+        RelNode intermediateProject = relBuilder.push(inputRel)
+            .projectNamed(preExprs.leftList(), preExprs.rightList(), false)
             .build();
-      } else {
-        r2 = intermediateProject;
+        final RelNode r2;
+        // deal with correlation
+        final CorrelationUse p = getCorrelationUse(bb, intermediateProject);
+        if (p != null) {
+          assert p.r instanceof Project;
+          // correlation variables have been normalized in p.r, we should use expressions
+          // in p.r instead of the original exprs
+          Project project1 = (Project) p.r;
+          r2 = relBuilder.push(bb.root())
+              .projectNamed(project1.getProjects(), project1.getRowType().getFieldNames(),
+                  true, ImmutableSet.of(p.id))
+              .build();
+        } else {
+          r2 = intermediateProject;
+        }
+        bb.setRoot(r2, false);
+        bb.mapRootRelToFieldProjection.put(bb.root(), r.groupExprProjection);
       }
-      bb.setRoot(r2, false);
-      bb.mapRootRelToFieldProjection.put(bb.root(), r.groupExprProjection);
-
       // REVIEW jvs 31-Oct-2007:  doesn't the declaration of
       // monotonicity here assume sort-based aggregation at
       // the physical level?

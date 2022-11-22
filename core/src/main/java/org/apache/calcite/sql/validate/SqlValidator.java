@@ -889,6 +889,12 @@ public interface SqlValidator {
      */
     Config withIdentifierExpansion(boolean expand);
 
+    @Value.Default default boolean offerNotFoundHint() {
+      return true;
+    }
+
+    Config withOfferNotFoundHint(boolean expand);
+
     /**
      * Returns whether to treat the query being validated as embedded
      * (as opposed to top-level).

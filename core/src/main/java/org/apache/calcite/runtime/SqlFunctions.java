@@ -737,7 +737,7 @@ public class SqlFunctions {
     /** SQL {@code REGEXP_REPLACE} function with 6 arguments. */
     public String regexpReplace(String s, String regex, String replacement,
         int pos, int occurrence, @Nullable String matchType) {
-      if (pos < 1 || pos > s.length()) {
+      if (pos < 1 || pos > s.length() + 1) {
         throw RESOURCE.invalidInputForRegexpReplace(Integer.toString(pos)).ex();
       }
 
@@ -749,20 +749,25 @@ public class SqlFunctions {
 
     /** SQL {@code REGEXP_REPLACE} function for PostgreSQL with 3 arguments. */
     public String regexpReplacePg(String s, String regex, String replacement) {
-      return regexpReplace(s, regex, replacement, 1, 1, null);
+      return regexpReplaceNonDollarIndexed(s, regex, replacement, 1, 1, null);
     }
 
     /** SQL {@code REGEXP_REPLACE} function for PostgreSQL with 4 arguments. */
     public String regexpReplacePg(String s, String regex, String replacement, String matchType) {
       // Translate g flag to occurrence
       final int occurrence = matchType.contains("g") ? 0 : 1;
-      return regexpReplace(s, regex, replacement, 1, occurrence, matchType);
+      return regexpReplaceNonDollarIndexed(s, regex, replacement, 1, occurrence, matchType);
     }
 
     /** SQL {@code REGEXP_REPLACE} function with 3 arguments with
      * {@code \\} based indexing for capturing groups. */
     public String regexpReplaceNonDollarIndexed(String s, String regex,
         String replacement) {
+      return regexpReplaceNonDollarIndexed(s, regex, replacement, 1, 0, null);
+    }
+
+    private String regexpReplaceNonDollarIndexed(String s, String regex,
+        String replacement, int pos, int occurrence, @Nullable String matchType) {
       // Modify double-backslash capturing group indices in replacement argument,
       // retrieved from cache when available.
       String indexedReplacement;
@@ -776,8 +781,9 @@ public class SqlFunctions {
       }
 
       // Call generic regexp replace method with modified replacement pattern
-      return regexpReplace(s, regex, indexedReplacement, 1, 0, null);
+      return regexpReplace(s, regex, indexedReplacement, pos, occurrence, matchType);
     }
+
 
     private static int makeRegexpFlags(String stringFlags) {
       int flags = 0;
@@ -5727,6 +5733,21 @@ public class SqlFunctions {
     return timeFrameSet.addDate(date, interval, timeFrame);
   }
 
+  /** SQL {@code DATEADD} function applied to a custom time frame.
+   *
+   * <p>Custom time frames are created as part of a {@link TimeFrameSet}.
+   * This method retrieves the session's time frame set from the
+   * {@link DataContext.Variable#TIME_FRAME_SET} variable, then looks up the
+   * time frame by name. */
+  public static int customDateAdd(DataContext root,
+      TimeUnitRange timeFrameName, int interval, int date) {
+    final TimeFrameSet timeFrameSet =
+        requireNonNull(DataContext.Variable.TIME_FRAME_SET.get(root));
+    final TimeFrame timeFrame = timeFrameSet.get(timeFrameName.startUnit);
+    return timeFrameSet.addDate(date, interval, timeFrame);
+  }
+
+
   /** SQL {@code TIMESTAMPADD} function applied to a custom time frame.
    *
    * <p>Custom time frames are created and accessed as described in
@@ -5738,6 +5759,19 @@ public class SqlFunctions {
     final TimeFrame timeFrame = timeFrameSet.get(timeFrameName);
     return timeFrameSet.addTimestamp(timestamp, interval, timeFrame);
   }
+
+  /** SQL {@code TIMESTAMPADD} function applied to a custom time frame.
+   *
+   * <p>Custom time frames are created and accessed as described in
+   * {@link #customDateAdd}. */
+  public static long customTimestampAdd(DataContext root,
+      TimeUnitRange timeFrameName, long interval, long timestamp) {
+    final TimeFrameSet timeFrameSet =
+        requireNonNull(DataContext.Variable.TIME_FRAME_SET.get(root));
+    final TimeFrame timeFrame = timeFrameSet.get(timeFrameName.startUnit);
+    return timeFrameSet.addTimestamp(timestamp, interval, timeFrame);
+  }
+
 
   /** SQL {@code DATEDIFF} function applied to a custom time frame.
    *

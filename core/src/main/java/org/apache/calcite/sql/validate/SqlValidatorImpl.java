@@ -2381,6 +2381,15 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     if (namespace == null) {
       namespaces.put(requireNonNull(ns.getNode()), ns);
       namespace = ns;
+    } else {
+      // due to the identity map, it is possible that the namespace returned by the map
+      // is different from the namespace to register
+      // this can lead to bugs during runtime therefore we throw an exception here
+      if (ns.getEnclosingNode() != namespace.getEnclosingNode()) {
+        throw new RuntimeException("Namespace returned by identity hashmap has different "
+            + "enclosing node. Namespace to register: " + ns.getEnclosingNode()
+            + ", Namespace returned by map: " + namespace.getEnclosingNode());
+      }
     }
     if (usingScope != null) {
       if (alias == null) {
@@ -4432,25 +4441,27 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
         break;
       }
     } else if (query.getKind() == SqlKind.WITH) {
-     // The modality of WITH clause depends on its body
-     // For example:
-     // SQL: WITH STREAMTABLE AS (SELECT STREAM * FROM KAFKA.MOCKTABLE) SELECT * FROM STREAMTABLE
-     // The modality should be RELATION.
-     // SQL: WITH STREAMTABLE AS (SELECT STREAM * FROM KAFKA.MOCKTABLE)
-     //      SELECT STREAM * FROM STREAMTABLE
-     // The modality should be STREAM.
-      validateModality(((SqlWith) query).body);
+      SqlWith with = (SqlWith) query;
+      for (SqlNode item : with.withList) {
+        SqlNode operand = ((SqlWithItem) item).query;
+        validateModality(operand, modality);
+      }
+      validateModality(with.body, modality);
     } else {
       assert query.isA(SqlKind.SET_QUERY);
       final SqlCall call = (SqlCall) query;
       for (SqlNode operand : call.getOperandList()) {
-        if (deduceModality(operand) != modality) {
-          throw newValidationError(operand,
-              Static.RESOURCE.streamSetOpInconsistentInputs());
-        }
-        validateModality(operand);
+        validateModality(operand, modality);
       }
     }
+  }
+
+  private  void validateModality(SqlNode operand, SqlModality modality) {
+    if (deduceModality(operand) != modality) {
+      throw newValidationError(operand,
+          Static.RESOURCE.streamSetOpInconsistentInputs());
+    }
+    validateModality(operand);
   }
 
   /** Return the intended modality of a SELECT or set-op. */
