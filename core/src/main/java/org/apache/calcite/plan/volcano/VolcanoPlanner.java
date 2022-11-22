@@ -81,6 +81,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.PriorityQueue;
 import java.util.Set;
+import java.util.Stack;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -715,8 +716,12 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
    * @see org.apache.calcite.plan.volcano.RelSubset#bestCost
    */
   private RelOptCost getCostOrInfinite(RelNode rel, RelMetadataQuery mq) {
-    RelOptCost cost = getCost(rel, mq);
-    return cost == null ? infCost : cost;
+    try {
+      RelOptCost cost = getCost(rel, mq);
+      return cost == null ? infCost : cost;
+    } catch (CyclicMetadataException exc) {
+      return infCost;
+    }
   }
 
   @Override public @Nullable RelOptCost getCost(RelNode rel, RelMetadataQuery mq) {
@@ -1118,13 +1123,17 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
       assert input instanceof RelSubset;
       final RelSubset subset = (RelSubset) input;
       RelSubset newSubset = canonize(subset);
-      newInputs.add(newSubset);
-      if (newSubset != subset) {
-        if (subset.set != newSubset.set) {
-          subset.set.parents.remove(rel);
-          newSubset.set.parents.add(rel);
+      if (hasCycle(rel, newSubset)) {
+        newInputs.add(input);
+      } else {
+        newInputs.add(newSubset);
+        if (newSubset != subset) {
+          if (subset.set != newSubset.set) {
+            subset.set.parents.remove(rel);
+            newSubset.set.parents.add(rel);
+          }
+          changeCount++;
         }
-        changeCount++;
       }
     }
 
@@ -1133,13 +1142,45 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
       RelNode removed = mapDigestToRel.remove(rel.getRelDigest());
       assert removed == rel;
       for (int i = 0; i < inputs.size(); i++) {
-        rel.replaceInput(i, newInputs.get(i));
+        RelNode newInput = newInputs.get(i);
+        rel.replaceInput(i, newInput);
       }
       rel.recomputeDigest();
       return true;
     }
     return false;
   }
+
+  private boolean hasCycle(RelNode rel, RelNode newInput) {
+    Stack<Integer> visited = new Stack<>();
+    visited.push(rel.getId());
+    return hasCycle(newInput, visited);
+  }
+
+  private boolean hasCycle(RelNode node, Stack<Integer> visited) {
+    if (node instanceof RelSubset) {
+      RelSubset subset = (RelSubset) node;
+      node = subset.getBestOrOriginal();
+    }
+    if (visited.contains(node.getId())) {
+      return true;
+    }
+    try {
+      visited.push(node.getId());
+      List<RelNode> inputs = node.getInputs();
+      for (RelNode input : inputs) {
+        boolean cycle = hasCycle(input, visited);
+        if (cycle) {
+          return true;
+        }
+      }
+    } finally {
+      visited.pop();
+    }
+    return false;
+  }
+
+
 
   private RelSet merge(RelSet set1, RelSet set2) {
     assert set1 != set2 : "pre: set1 != set2";

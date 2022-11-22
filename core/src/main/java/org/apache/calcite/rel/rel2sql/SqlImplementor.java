@@ -41,28 +41,7 @@ import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.rel.type.RelDataTypeSystemImpl;
-import org.apache.calcite.rex.RexBuilder;
-import org.apache.calcite.rex.RexCall;
-import org.apache.calcite.rex.RexCorrelVariable;
-import org.apache.calcite.rex.RexDynamicParam;
-import org.apache.calcite.rex.RexFieldAccess;
-import org.apache.calcite.rex.RexFieldCollation;
-import org.apache.calcite.rex.RexInputRef;
-import org.apache.calcite.rex.RexLambda;
-import org.apache.calcite.rex.RexLambdaRef;
-import org.apache.calcite.rex.RexLiteral;
-import org.apache.calcite.rex.RexLocalRef;
-import org.apache.calcite.rex.RexNode;
-import org.apache.calcite.rex.RexOver;
-import org.apache.calcite.rex.RexPatternFieldRef;
-import org.apache.calcite.rex.RexProgram;
-import org.apache.calcite.rex.RexShuttle;
-import org.apache.calcite.rex.RexSubQuery;
-import org.apache.calcite.rex.RexUnknownAs;
-import org.apache.calcite.rex.RexUtil;
-import org.apache.calcite.rex.RexWindow;
-import org.apache.calcite.rex.RexWindowBound;
-import org.apache.calcite.rex.RexWindowExclusion;
+import org.apache.calcite.rex.*;
 import org.apache.calcite.sql.JoinType;
 import org.apache.calcite.sql.SqlAggFunction;
 import org.apache.calcite.sql.SqlBasicCall;
@@ -123,6 +102,7 @@ import com.google.common.collect.RangeSet;
 import org.checkerframework.checker.initialization.qual.UnknownInitialization;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
+import java.awt.event.FocusEvent;
 import java.math.BigDecimal;
 import java.util.AbstractList;
 import java.util.ArrayDeque;
@@ -643,7 +623,11 @@ public abstract class SqlImplementor {
       this.ignoreCast = ignoreCast;
     }
 
-    public abstract SqlNode field(int ordinal);
+    public abstract SqlNode field(int ordinal, Clause clause);
+
+    public  SqlNode field(int ordinal){
+      return field(ordinal, Clause.SELECT);
+    }
 
     /** Creates a reference to a field to be used in an ORDER BY clause.
      *
@@ -704,6 +688,7 @@ public abstract class SqlImplementor {
           final RexCorrelVariable variable = (RexCorrelVariable) referencedExpr;
           final Context correlAliasContext = getAliasContext(variable);
           final RexFieldAccess lastAccess = requireNonNull(accesses.pollLast());
+          assert lastAccess != null;
           SqlNode node  = correlAliasContext
               .field(lastAccess.getField().getIndex());
           if (node instanceof SqlDynamicParam) {
@@ -1620,7 +1605,7 @@ public abstract class SqlImplementor {
       throw new UnsupportedOperationException();
     }
 
-    @Override public SqlNode field(int ordinal) {
+    @Override public SqlNode field(int ordinal, Clause clause) {
       return field.apply(ordinal);
     }
   }
@@ -1650,8 +1635,8 @@ public abstract class SqlImplementor {
     return x;
   }
 
-  public Context selectListContext(SqlNodeList sqlNodeList, boolean aliasRef) {
-    return new SelectListContext(dialect, sqlNodeList.size(), aliasRef, sqlNodeList);
+  public Context selectListContext(SqlNodeList sqlNodeList, boolean aliasRef, boolean isCalcView) {
+    return new SelectListContext(dialect, sqlNodeList.size(), aliasRef, sqlNodeList, isCalcView);
   }
 
   public Context aliasContext(Map<String, RelDataType> aliases,
@@ -1708,7 +1693,7 @@ public abstract class SqlImplementor {
       this.qualified = qualified;
     }
 
-    @Override public SqlNode field(int ordinal) {
+    @Override public SqlNode field(int ordinal, Clause clause) {
       for (Map.Entry<String, RelDataType> alias : aliases.entrySet()) {
         final List<RelDataTypeField> fields = alias.getValue().getFieldList();
         if (ordinal < fields.size()) {
@@ -1739,11 +1724,11 @@ public abstract class SqlImplementor {
       this.rightContext = rightContext;
     }
 
-    @Override public SqlNode field(int ordinal) {
+    @Override public SqlNode field(int ordinal, Clause clause) {
       if (ordinal < leftContext.fieldCount) {
         return leftContext.field(ordinal);
       } else {
-        return rightContext.field(ordinal - leftContext.fieldCount);
+        return rightContext.field(ordinal - leftContext.fieldCount,clause);
       }
     }
 
@@ -1784,7 +1769,7 @@ public abstract class SqlImplementor {
       this.inputSqlNodes = inputSqlNodes;
     }
 
-    @Override public SqlNode field(int ordinal) {
+    @Override public SqlNode field(int ordinal, Clause clause) {
       return inputSqlNodes.get(ordinal);
     }
   }
@@ -1805,7 +1790,7 @@ public abstract class SqlImplementor {
       this.inputTableNode = inputTableNode;
     }
 
-    @Override public SqlNode field(int ordinal) {
+    @Override public SqlNode field(int ordinal, Clause clause) {
       return inputFieldNodes.get(ordinal);
     }
 
@@ -1837,6 +1822,7 @@ public abstract class SqlImplementor {
   final class SelectListContext extends BaseContext {
     private final boolean aliasRef;
     private final SqlNodeList selectList;
+    private final boolean isCalcView;
 
     /**
      * Creates a SelectListContext.
@@ -1850,24 +1836,30 @@ public abstract class SqlImplementor {
      * @param selectList The list of expressions in a SELECT clause.
      */
     SelectListContext(
-        SqlDialect dialect, int fieldCount, boolean aliasRef, SqlNodeList selectList) {
+        SqlDialect dialect, int fieldCount, boolean aliasRef, SqlNodeList selectList, boolean isCalcView) {
       super(dialect, fieldCount);
       this.aliasRef = aliasRef;
       this.selectList = selectList;
+      this.isCalcView = isCalcView;
     }
 
-    @Override public SqlNode field(int ordinal) {
+    @Override public SqlNode field(int ordinal, Clause clause) {
       final SqlNode selectItem = selectList.get(ordinal);
       switch (selectItem.getKind()) {
       case AS:
         final SqlCall asCall = (SqlCall) selectItem;
         SqlNode alias = asCall.operand(1);
-        if (aliasRef && !SqlUtil.isGeneratedAlias(((SqlIdentifier) alias).getSimple())) {
+        if ((aliasRef && !SqlUtil.isGeneratedAlias(((SqlIdentifier) alias).getSimple()))) {
           // For BigQuery, given the query
           //   SELECT SUM(x) AS x FROM t HAVING(SUM(t.x) > 0)
           // we can generate
           //   SELECT SUM(x) AS x FROM t HAVING(x > 0)
           // because 'x' in HAVING resolves to the 'AS x' not 't.x'.
+          return alias;
+        }
+        if (isCalcView
+            && asCall.operand(0) instanceof SqlIdentifier
+            && clause != Clause.GROUP_BY) {
           return alias;
         }
         return asCall.operand(0);
@@ -2011,8 +2003,8 @@ public abstract class SqlImplementor {
       if (!selectList.equals(SqlNodeList.SINGLETON_STAR)) {
         final boolean aliasRef = expectedClauses.contains(Clause.HAVING)
             && dialect.getConformance().isHavingAlias();
-        newContext = selectListContext(selectList, aliasRef);
-      } else {
+        newContext = selectListContext(selectList, aliasRef,RelOptUtil.hasCalcViewHint(rel));
+     } else {
         boolean qualified =
             !dialect.hasImplicitTableAlias() || aliases.size() > 1;
         // basically, we did a subSelect() since needNew is set and neededAlias is not null
@@ -2130,6 +2122,17 @@ public abstract class SqlImplementor {
           return true;
         }
 
+        if ( agg.getInput() instanceof Project) {
+          final Project project = (Project) agg.getInput();
+          boolean hasDynamicParamInGroupBy = false;
+          final DynamicParamVisitor finder = new DynamicParamVisitor();
+          for ( int group: agg.getGroupSet()) {
+            hasDynamicParamInGroupBy = hasDynamicParamInGroupBy || project.getProjects().get(group).accept(finder);
+          }
+          if ( hasDynamicParamInGroupBy) {
+            return true;
+          }
+        }
         if (clauses.contains(Clause.GROUP_BY)) {
           // Avoid losing the distinct attribute of inner aggregate.
           return !hasNestedAgg || Aggregate.isNotGrandTotal(agg);
@@ -2500,6 +2503,71 @@ public abstract class SqlImplementor {
           : new Result(node, clauses, neededAlias, neededType, aliases, anon,
               ignoreClauses, ImmutableSet.copyOf(expectedClauses), expectedRel, false);
     }
+
+    private class DynamicParamVisitor implements RexVisitor<Boolean> {
+      public DynamicParamVisitor() {
+      }
+
+      @Override
+      public Boolean visitInputRef(RexInputRef inputRef) {
+        return false;
+      }
+      @Override
+      public Boolean visitLocalRef(RexLocalRef localRef) {
+        return false;
+      }
+      @Override
+      public Boolean visitLiteral(RexLiteral literal) {
+        return false;
+      }
+      @Override
+      public Boolean visitCorrelVariable(RexCorrelVariable correlVariable) {
+        return false;
+      }
+      @Override public Boolean visitDynamicParam(RexDynamicParam dynamicParam) {
+        return true;
+      }
+      @Override public Boolean visitOver(RexOver over){
+        return false;
+      }
+      @Override public Boolean visitCall(RexCall call) {
+        for (RexNode operand : call.operands) {
+          if (operand.accept(this)) return true;
+        }
+        return false;
+      }
+      @Override public Boolean visitRangeRef(RexRangeRef rangeRef){
+        return false;
+      }
+      @Override public Boolean visitFieldAccess(RexFieldAccess fieldAccess){
+        return false;
+      }
+      @Override public Boolean visitSubQuery(RexSubQuery subQuery){
+        return false;
+      }
+      @Override public Boolean visitTableInputRef(RexTableInputRef fieldRef){
+        return false;
+      }
+      @Override public Boolean visitPatternFieldRef(RexPatternFieldRef fieldRef){
+        return false;
+      }
+
+      @Override
+      public Boolean visitLambda(RexLambda lambda) {
+        return false;
+      }
+
+      @Override
+      public Boolean visitLambdaRef(RexLambdaRef lambdaRef) {
+        return false;
+      }
+
+      @Override
+      public Boolean visitNodeAndFieldIndex(RexNodeAndFieldIndex nodeAndFieldIndex) {
+        return false;
+      }
+
+    }
   }
 
   /** Builder. */
@@ -2524,6 +2592,10 @@ public abstract class SqlImplementor {
 
     public void setSelect(SqlNodeList nodeList) {
       select.setSelectList(nodeList);
+    }
+
+    public void setFrom(SqlNode node) {
+      select.setFrom(node);
     }
 
     public void setWhere(SqlNode node) {

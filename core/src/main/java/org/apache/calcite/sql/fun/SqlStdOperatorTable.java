@@ -2488,7 +2488,7 @@ public class SqlStdOperatorTable extends ReflectiveSqlOperatorTable {
    * The LISTAGG operator. String aggregator function.
    */
   public static final SqlAggFunction LISTAGG =
-      new SqlListaggAggFunction(SqlKind.LISTAGG, ReturnTypes.ARG0_NULLABLE);
+      new SqlListaggAggFunction(SqlKind.LISTAGG, ReturnTypes.VARCHAR_NULLABLE);
 
   /**
    * The FUSION operator. Multiset aggregator function.

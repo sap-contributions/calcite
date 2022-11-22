@@ -16,6 +16,8 @@
  */
 package org.apache.calcite.schema.impl;
 
+import java.util.HashSet;
+
 import org.apache.calcite.adapter.java.AbstractQueryableTable;
 import org.apache.calcite.jdbc.CalciteSchema;
 import org.apache.calcite.linq4j.QueryProvider;
@@ -26,6 +28,8 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelRoot;
 import org.apache.calcite.rel.RelShuttleImpl;
 import org.apache.calcite.rel.core.TableScan;
+import org.apache.calcite.rel.hint.Hintable;
+import org.apache.calcite.rel.hint.RelHint;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rel.type.RelProtoDataType;
@@ -39,6 +43,10 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.lang.reflect.Type;
 import java.util.List;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
+
+import static org.apache.calcite.plan.Hints.PROPAGATE_HINTS;
 
 /**
  * Table whose contents are defined using an SQL statement.
@@ -126,9 +134,18 @@ public class ViewTable
   private RelRoot expandView(RelOptTable.ToRelContext context,
       RelDataType rowType, String queryString) {
     try {
-      final RelRoot root =
-          context.expandView(rowType, queryString, schemaPath, viewPath);
+      final RelRoot root = context.expandView(rowType, queryString, schemaPath, viewPath);
       final RelNode rel = RelOptUtil.createCastRel(root.rel, rowType, true);
+      Predicate<RelHint> oldHintFilter = hint -> "PARAMETERS".equals(hint.hintName) || "ANONYMIZE".equals(hint.hintName);
+      Predicate<RelHint> hintFilter =  root.rel instanceof Hintable
+          ? ((Hintable)root.rel).getHints().stream()
+            .filter(hint -> hint.hintName.equals(PROPAGATE_HINTS))
+            .findAny()
+            .map(it -> new HashSet<>(it.listOptions))
+            .map(it -> oldHintFilter.or(hint -> it.contains(hint.hintName)))
+            .orElse(oldHintFilter)
+          : oldHintFilter;
+
       // Expand any views
       final RelNode rel2 =
           rel.accept(new RelShuttleImpl() {
@@ -137,7 +154,13 @@ public class ViewTable
               final TranslatableTable translatableTable =
                   table.unwrap(TranslatableTable.class);
               if (translatableTable != null) {
-                return translatableTable.toRel(context, table);
+                RelNode result = translatableTable.toRel(context, table);
+                if ( result instanceof Hintable) {
+                  result = ((Hintable)result).attachHints(scan.getHints().stream()
+                      .filter(hintFilter)
+                      .collect(Collectors.toList()));
+                }
+                return result;
               }
               return super.visit(scan);
             }

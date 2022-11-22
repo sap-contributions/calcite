@@ -143,7 +143,7 @@ public class IdentifierNamespace extends AbstractNamespace {
 
     // Failed to match.  If we're matching case-sensitively, try a more
     // lenient match. If we find something we can offer a helpful hint.
-    if (nameMatcher.isCaseSensitive()) {
+    if (nameMatcher.isCaseSensitive() && validator.config().offerNotFoundHint()) {
       final SqlNameMatcher liberalMatcher = SqlNameMatchers.liberal();
       resolved.clear();
       parentScope.resolveTable(names, liberalMatcher,

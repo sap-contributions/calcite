@@ -58,6 +58,7 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 
 import static com.google.common.base.Preconditions.checkState;
 
@@ -124,12 +125,11 @@ public final class Schemas {
   /** Returns the expression for a sub-schema. */
   public static Expression subSchemaExpression(SchemaPlus schema, String name,
       Class type) {
-    // (Type) schemaExpression.getSubSchema("name")
+    // (Type) schemaExpression.subSchemas().get("name")
     final Expression schemaExpression = expression(schema);
     Expression call =
-        Expressions.call(
+        Expressions.call(BuiltInMethod.SCHEMAS_GET_EXISTING_SUB_SCHEMA.method,
             schemaExpression,
-            BuiltInMethod.SCHEMA_GET_SUB_SCHEMA.method,
             Expressions.constant(name));
     //CHECKSTYLE: IGNORE 2
     //noinspection unchecked
@@ -138,6 +138,15 @@ public final class Schemas {
     }
     return call;
   }
+
+  public static SchemaPlus getExistingSubSchema(SchemaPlus schema, String name) {
+    SchemaPlus subSchema = schema.subSchemas().get(name);
+    if (subSchema == null) {
+      throw new NoSuchElementException("Sub schema " +  name + " not found in " + schema.getName());
+    }
+    return subSchema;
+  }
+
 
   /** Converts a schema expression to a given type by calling the
    * {@link SchemaPlus#unwrap(Class)} method. */
@@ -643,4 +652,6 @@ public final class Schemas {
       return pairs.rightList();
     }
   }
+
+
 }

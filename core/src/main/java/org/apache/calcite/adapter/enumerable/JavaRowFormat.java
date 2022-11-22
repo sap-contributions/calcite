@@ -37,6 +37,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static org.apache.calcite.util.BuiltInMethod.ARRAY_COPY;
 import static org.apache.calcite.util.BuiltInMethod.LIST_TO_ARRAY;
@@ -218,7 +219,9 @@ public enum JavaRowFormat {
                 BuiltInMethod.LIST_N.method,
                 Expressions.newArrayInit(
                     Comparable.class,
-                    expressions)),
+                    expressions.stream()
+                        .map(it -> it.type == Object.class ? Expressions.convert_(it,Comparable.class) : it)
+                        .collect(Collectors.toList()))),
             List.class);
       }
     }
