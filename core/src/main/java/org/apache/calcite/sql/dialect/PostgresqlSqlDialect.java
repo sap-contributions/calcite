@@ -48,7 +48,9 @@ import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql.type.SqlTypeUtil;
+import org.apache.calcite.sql.validate.SqlDelegatingConformance;
 import org.apache.calcite.util.Util;
+import org.apache.calcite.sql.validate.SqlConformance;
 
 import com.google.common.collect.ImmutableList;
 
@@ -271,5 +273,16 @@ public class PostgresqlSqlDialect extends SqlDialect {
         value.unparse(writer, leftPrec, rightPrec);
       }
     }
+  }
+
+  @Override
+  public SqlConformance getConformance() {
+    SqlConformance conformance = super.getConformance();
+    return new SqlDelegatingConformance(conformance) {
+       @Override
+      public boolean isGroupByAlias() {
+        return true;
+      }
+   };
   }
 }

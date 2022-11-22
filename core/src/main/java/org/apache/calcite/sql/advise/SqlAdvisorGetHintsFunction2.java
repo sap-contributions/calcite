@@ -52,11 +52,10 @@ import java.util.List;
 public class SqlAdvisorGetHintsFunction2
     implements TableFunction, ImplementableFunction {
   private static final Expression ADVISOR =
-      Expressions.convert_(
-          Expressions.call(DataContext.ROOT,
-              BuiltInMethod.DATA_CONTEXT_GET.method,
-              Expressions.constant(DataContext.Variable.SQL_ADVISOR.camelName)),
-          SqlAdvisor.class);
+      Expressions.call(DataContext.ROOT,
+          BuiltInMethod.DATA_CONTEXT_GET_TYPED.method,
+          Expressions.constant(DataContext.Variable.SQL_ADVISOR.camelName),
+          Expressions.constant(SqlAdvisor.class));
 
   private static final Method GET_COMPLETION_HINTS =
       Types.lookupMethod(SqlAdvisorGetHintsFunction2.class, "getCompletionHints",

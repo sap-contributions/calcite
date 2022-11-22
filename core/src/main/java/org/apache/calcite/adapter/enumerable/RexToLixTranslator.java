@@ -1653,13 +1653,15 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
     final Expression rawValueExpression = isNumeric
         ? EnumUtils.convert(
             EnumUtils.convert(
-                Expressions.call(root, BuiltInMethod.DATA_CONTEXT_GET.method,
-                    Expressions.constant("?" + dynamicParam.getIndex())),
+                Expressions.call(root, BuiltInMethod.DATA_CONTEXT_GET_TYPED.method,
+                    Expressions.constant("?" + dynamicParam.getIndex()),
+                    Expressions.constant(storageType)),
                 java.lang.Number.class),
             valueType)
         : EnumUtils.convert(
-            Expressions.call(root, BuiltInMethod.DATA_CONTEXT_GET.method,
-                Expressions.constant("?" + dynamicParam.getIndex())),
+            Expressions.call(root, BuiltInMethod.DATA_CONTEXT_GET_TYPED.method,
+                Expressions.constant("?" + dynamicParam.getIndex()),
+                Expressions.constant(storageType)),
             valueType);
 
     final Expression valueExpression =

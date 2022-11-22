@@ -158,6 +158,7 @@ public abstract class BuiltInMetadata {
       }
     }
   }
+  /** Metadata about whether fields are trimmable within a relation. */
 
   /** Metadata about which columns are sorted. */
   public interface Collation extends Metadata {

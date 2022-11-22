@@ -16,14 +16,21 @@
  */
 package org.apache.calcite.adapter.enumerable;
 
+import java.util.function.Predicate;
+
+import java.util.function.Supplier;
+
+import org.apache.calcite.adapter.jdbc.JdbcConvention;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelRule;
+import org.apache.calcite.plan.RelTrait;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.CorrelationId;
 import org.apache.calcite.rel.core.Join;
 import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rel.logical.LogicalJoin;
+import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexCorrelVariable;
 import org.apache.calcite.rex.RexInputRef;
@@ -32,6 +39,7 @@ import org.apache.calcite.rex.RexShuttle;
 import org.apache.calcite.tools.RelBuilder;
 import org.apache.calcite.tools.RelBuilderFactory;
 import org.apache.calcite.util.ImmutableBitSet;
+import org.apache.calcite.util.Util;
 
 import org.immutables.value.Value;
 
@@ -79,10 +87,45 @@ public class EnumerableBatchNestedLoopJoinRule
   @Override public boolean matches(RelOptRuleCall call) {
     Join join = call.rel(0);
     JoinRelType joinType = join.getJoinType();
-    return joinType == JoinRelType.INNER
+    return (joinType == JoinRelType.INNER
         || joinType == JoinRelType.LEFT
         || joinType == JoinRelType.ANTI
-        || joinType == JoinRelType.SEMI;
+        || joinType == JoinRelType.SEMI )
+           && !allLeafsMatch(join, new HasSingleJdbcSource());
+  }
+
+  private static class HasSingleJdbcSource implements Predicate<RelNode> {
+    private JdbcConvention convention = null;
+    @Override
+    public boolean test(RelNode node) {
+      for (RelTrait trait : node.getTraitSet()) {
+        if (trait instanceof JdbcConvention) {
+          JdbcConvention otherConvention = (JdbcConvention) trait;
+          // The first leaf in the tree sets the convention
+          if (convention == null) {
+            convention = otherConvention;
+            return true;
+          }
+          // All other leafs must match the stored convention
+          return convention == otherConvention;
+        }
+      }
+      return false;
+    }
+  }
+
+  private boolean allLeafsMatch(RelNode node, HasSingleJdbcSource predicate) {
+      List<RelNode> inputs = node.getInputs();
+      if ( inputs.isEmpty()) {
+        return predicate.test(node);
+      } else {
+        for ( RelNode input : inputs) {
+          if ( !allLeafsMatch(input.stripped(), predicate)) {
+            return false;
+          }
+        }
+      }
+      return true;
   }
 
   @Override public void onMatch(RelOptRuleCall call) {
@@ -93,17 +136,15 @@ public class EnumerableBatchNestedLoopJoinRule
     final RelBuilder relBuilder = call.builder();
 
     final Set<CorrelationId> correlationIds = new HashSet<>();
-    final List<RexNode> corrVarList = new ArrayList<>();
 
-    final int batchSize = config.batchSize();
-    for (int i = 0; i < batchSize; i++) {
+    final RelDataType leftRowType = join.getLeft().getRowType();
+    int batchSize = config.batchSize();
+    Supplier<RexNode> corrVarSupplier = () -> {
       CorrelationId correlationId = cluster.createCorrel();
       correlationIds.add(correlationId);
-      corrVarList.add(
-          rexBuilder.makeCorrel(join.getLeft().getRowType(),
-              correlationId));
-    }
-    final RexNode corrVar0 = corrVarList.get(0);
+      return rexBuilder.makeCorrel(leftRowType,correlationId);
+    };
+    final RexNode corrVar0 = corrVarSupplier.get();
 
     final ImmutableBitSet.Builder requiredColumns = ImmutableBitSet.builder();
 
@@ -123,12 +164,14 @@ public class EnumerableBatchNestedLoopJoinRule
     final List<RexNode> conditionList = new ArrayList<>();
     conditionList.add(condition);
 
+    if ( requiredColumns.cardinality() > 2) {
+      batchSize = batchSize * 2 / requiredColumns.cardinality();
+    }
     // Add batchSize-1 other conditions
     for (int i = 1; i < batchSize; i++) {
-      final int corrIndex = i;
       final RexNode condition2 = condition.accept(new RexShuttle() {
         @Override public RexNode visitCorrelVariable(RexCorrelVariable variable) {
-          return variable.equals(corrVar0) ? corrVarList.get(corrIndex) : variable;
+          return variable.equals(corrVar0) ? corrVarSupplier.get() : variable;
         }
       });
       conditionList.add(condition2);
@@ -137,6 +180,8 @@ public class EnumerableBatchNestedLoopJoinRule
     // Push a filter with batchSize disjunctions
     relBuilder.push(join.getRight()).filter(relBuilder.or(conditionList));
     final RelNode right = relBuilder.build();
+    final double originRowCount =
+        Util.first(call.getMetadataQuery().getRowCount(join), Double.MAX_VALUE);
 
     call.transformTo(
         EnumerableBatchNestedLoopJoin.create(
@@ -147,7 +192,8 @@ public class EnumerableBatchNestedLoopJoinRule
             join.getCondition(),
             requiredColumns.build(),
             correlationIds,
-            join.getJoinType()));
+            join.getJoinType(),
+            originRowCount));
   }
 
   /** Rule configuration. */

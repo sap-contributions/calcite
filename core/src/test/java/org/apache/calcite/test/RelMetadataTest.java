@@ -3078,9 +3078,9 @@ public class RelMetadataTest {
 
     final LogicalProject project =
         LogicalProject.create(empSort, ImmutableList.of(),
-            projects,
-            ImmutableList.of("a", "b", "c", "d"),
-            ImmutableSet.of());
+        projects,
+        ImmutableList.of("a", "b", "c", "d"),
+        ImmutableSet.of());
 
     final LogicalTableScan deptScan =
         LogicalTableScan.create(cluster, deptTable, ImmutableList.of());

@@ -22,6 +22,7 @@ import org.apache.calcite.avatica.util.TimeUnit;
 import org.apache.calcite.config.CharLiteralStyle;
 import org.apache.calcite.config.NullCollation;
 import org.apache.calcite.linq4j.function.Experimental;
+import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.rel.RelFieldCollation;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.JoinRelType;
@@ -1359,6 +1360,11 @@ public class SqlDialect {
   /** Returns whether matching of identifiers is case-sensitive. */
   public boolean isCaseSensitive() {
     return caseSensitive;
+  }
+
+  @Nullable
+  public Expression resultSetGet(SqlTypeName type, Expression resultSet, Expression index) {
+    return null;
   }
 
   /**
