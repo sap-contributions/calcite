@@ -395,25 +395,33 @@ public class RelToSqlConverter extends SqlImplementor
 
   /** Visits a Correlate; called by {@link #dispatch} via reflection. */
   public Result visit(Correlate e) {
-    final Result leftResult =
-        visitInput(e, 0)
-            .resetAlias(e.getCorrelVariable(), e.getInput(0).getRowType());
+    boolean isUncollect = e.getRight() instanceof Uncollect;
+    Result leftResult = visitInput(e, 0);
+    if (!isUncollect) {
+      leftResult = leftResult.resetAlias(e.getCorrelVariable(), e.getRowType());
+    }
     parseCorrelTable(e, leftResult);
     final Result rightResult = visitInput(e, 1);
-    final SqlNode rightLateral =
-        SqlStdOperatorTable.LATERAL.createCall(POS, rightResult.node);
-    final SqlNode rightLateralAs =
-        SqlStdOperatorTable.AS.createCall(POS, rightLateral,
-            new SqlIdentifier(
-                requireNonNull(rightResult.neededAlias,
-                    () -> "rightResult.neededAlias is null, node is " + rightResult.node), POS));
+    final SqlNode rightNode;
+    if (isUncollect) {
+      rightNode = rightResult.node;
+    } else {
+      final SqlNode rightLateral =
+          SqlStdOperatorTable.LATERAL.createCall(POS, rightResult.node);
+      rightNode =
+          SqlStdOperatorTable.AS.createCall(POS, rightLateral,
+              new SqlIdentifier(
+                  requireNonNull(rightResult.neededAlias,
+                      () -> "rightResult.neededAlias is null, node is " + rightResult.node), POS));
+
+    }
 
     final SqlNode join =
         new SqlJoin(POS,
             leftResult.asFrom(),
             SqlLiteral.createBoolean(false, POS),
             JoinType.COMMA.symbol(POS),
-            rightLateralAs,
+            rightNode,
             JoinConditionType.NONE.symbol(POS),
             null);
     return result(join, leftResult, rightResult);
@@ -1273,6 +1281,19 @@ public class RelToSqlConverter extends SqlImplementor
 
   public Result visit(Uncollect e) {
     final Result x = visitInput(e, 0);
+    SqlNode node = x.asStatement();
+    if (node instanceof SqlSelect) {
+      SqlSelect select = (SqlSelect) node;
+      if (select.getFrom() instanceof SqlBasicCall) {
+        SqlBasicCall from = (SqlBasicCall) select.getFrom();
+        if (from.getOperandList().get(0) instanceof  SqlBasicCall) {
+          SqlBasicCall operand = (SqlBasicCall) from.getOperandList().get(0);
+          if (operand.getOperator().kind == SqlKind.VALUES) {
+            node = select.getSelectList();
+          }
+        }
+      }
+    }
     final SqlOperator operator =
         e.withOrdinality ? SqlStdOperatorTable.UNNEST_WITH_ORDINALITY : SqlStdOperatorTable.UNNEST;
     final SqlNode unnestNode = operator.createCall(POS, x.asStatement());
