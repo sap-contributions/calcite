@@ -16,6 +16,7 @@
  */
 package org.apache.calcite.adapter.jdbc;
 
+import org.apache.calcite.adapter.enumerable.EnumerableConvention;
 import org.apache.calcite.linq4j.Queryable;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.plan.Contexts;
@@ -28,15 +29,18 @@ import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelRule;
 import org.apache.calcite.plan.RelTraitSet;
+import org.apache.calcite.plan.volcano.RelSubset;
 import org.apache.calcite.prepare.Prepare;
 import org.apache.calcite.rel.InvalidRelException;
 import org.apache.calcite.rel.RelCollation;
+import org.apache.calcite.rel.RelCollationTraitDef;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rel.SingleRel;
 import org.apache.calcite.rel.convert.ConverterRule;
 import org.apache.calcite.rel.core.Aggregate;
 import org.apache.calcite.rel.core.AggregateCall;
+import org.apache.calcite.rel.core.Correlate;
 import org.apache.calcite.rel.core.CorrelationId;
 import org.apache.calcite.rel.core.Filter;
 import org.apache.calcite.rel.core.Intersect;
@@ -47,13 +51,16 @@ import org.apache.calcite.rel.core.Project;
 import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.rel.core.Sort;
 import org.apache.calcite.rel.core.TableModify;
+import org.apache.calcite.rel.core.Uncollect;
 import org.apache.calcite.rel.core.Union;
 import org.apache.calcite.rel.core.Values;
+import org.apache.calcite.rel.metadata.RelMdCollation;
 import org.apache.calcite.rel.metadata.RelMdUtil;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rel.rel2sql.SqlImplementor;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexCall;
+import org.apache.calcite.rex.RexFieldAccess;
 import org.apache.calcite.rex.RexInputRef;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
@@ -79,6 +86,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.Logger;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Consumer;
@@ -249,6 +257,9 @@ public class JdbcRules {
     consumer.accept(JdbcMinusRule.create(out));
     consumer.accept(JdbcTableModificationRule.create(out));
     consumer.accept(JdbcValuesRule.create(out));
+    consumer.accept(JdbcUncollectRule.create(out));
+    consumer.accept(JdbcCorrelateRule.create(out));
+
   }
 
   /** Abstract base class for rule that converts to JDBC. */
@@ -989,6 +1000,151 @@ public class JdbcRules {
     @Override public JdbcImplementor.Result implement(JdbcImplementor implementor) {
       return implementor.implement(this);
     }
+  }
+
+
+  /**
+   * Rule to convert a {@link org.apache.calcite.rel.core.Uncollect} to a
+   * {@link org.apache.calcite.adapter.jdbc.JdbcRules.JdbcUncollect}.
+   */
+  public static class JdbcUncollectRule extends JdbcConverterRule {
+    /** Default configuration. */
+    public static JdbcUncollectRule create(JdbcConvention out) {
+      return Config.INSTANCE
+          .withConversion(Uncollect.class, uncollect -> isSimpleProject(uncollect.getInput()),
+              Convention.NONE, out, "JdbcUncollectRule")
+          .withRuleFactory(JdbcUncollectRule::new)
+          .toRule(JdbcUncollectRule.class);
+    }
+
+    private static boolean isSimpleProject(RelNode input) {
+      if (input instanceof RelSubset) {
+        RelSubset subset = (RelSubset) input;
+        for (RelNode node :  subset.getRels()) {
+          if (isSimpleProject(node)) {
+            return true;
+          }
+        }
+      }
+      if (input instanceof Project) {
+        Project project = (Project) input;
+        for (RexNode rexNode : project.getProjects()) {
+          if (!(rexNode instanceof RexFieldAccess)) {
+            return false;
+          }
+        }
+        return true;
+      }
+      return false;
+    }
+
+    /** Called from the Config. */
+    protected JdbcUncollectRule(Config config) {
+      super(config);
+    }
+
+    @Override public @Nullable RelNode convert(RelNode rel) {
+      final Uncollect uncollect = (Uncollect) rel;
+      return new JdbcUncollect(rel.getCluster(),
+          rel.getTraitSet().replace(out),
+          convert(uncollect.getInput(),
+          uncollect.getInput().getTraitSet().replace(out)));
+    }
+
+  }
+
+  /** UNNEST function implemented in JDBC convention. */
+  public static class JdbcUncollect extends Uncollect implements JdbcRel {
+    public JdbcUncollect(RelOptCluster cluster, RelTraitSet traitSet,
+        RelNode child) {
+      super(cluster, traitSet, child, false, Collections.emptyList());
+    }
+
+    @Override public @Nullable RelOptCost computeSelfCost(RelOptPlanner planner,
+        RelMetadataQuery mq) {
+      RelOptCost cost = super.computeSelfCost(planner, mq);
+      if (cost == null) {
+        return null;
+      }
+      return cost.multiplyBy(.1);
+    }
+
+
+    @Override public JdbcUncollect copy(RelTraitSet traitSet, RelNode newInput) {
+      return new JdbcUncollect(getCluster(), traitSet, newInput);
+    }
+
+    @Override public JdbcImplementor.Result implement(JdbcImplementor implementor) {
+      return implementor.implement(this);
+    }
+  }
+
+
+  /**
+   * Rule to convert a {@link org.apache.calcite.rel.core.Correlate} to a
+   * {@link org.apache.calcite.adapter.jdbc.JdbcRules.JdbcCorrelate}.
+   */
+  public static class JdbcCorrelateRule extends JdbcConverterRule {
+    /** Default configuration. */
+    public static JdbcCorrelateRule create(JdbcConvention out) {
+      return Config.INSTANCE
+          .withConversion(Correlate.class, Convention.NONE, out, "JdbcCorrelate")
+          .withRuleFactory(JdbcCorrelateRule::new)
+          .toRule(JdbcCorrelateRule.class);
+    }
+
+    /** Called from the Config. */
+    protected JdbcCorrelateRule(Config config) {
+      super(config);
+    }
+
+    @Override public @Nullable RelNode convert(RelNode rel) {
+      final Correlate correlate = (Correlate) rel;
+      return new JdbcCorrelate(rel.getCluster(),
+          rel.getTraitSet().replace(out),
+          convert(correlate.getLeft(), correlate.getLeft().getTraitSet().replace(out)),
+          convert(correlate.getRight(), correlate.getRight().getTraitSet().replace(out)),
+          correlate.getCorrelationId(), correlate.getRequiredColumns(), correlate.getJoinType());
+    }
+
+  }
+
+  /** CORRELATE function implemented in JDBC convention. */
+  public static class JdbcCorrelate extends Correlate implements JdbcRel {
+
+    public JdbcCorrelate(RelOptCluster cluster, RelTraitSet traits,
+        RelNode left, RelNode right,
+        CorrelationId correlationId,
+        ImmutableBitSet requiredColumns, JoinRelType joinType) {
+      super(cluster, traits, ImmutableList.of(), left, right, correlationId, requiredColumns,
+          joinType);
+    }
+
+    /** Creates an EnumerableCorrelate. */
+    public static JdbcCorrelate create(RelNode left, RelNode right, CorrelationId correlationId,
+        ImmutableBitSet requiredColumns, JoinRelType joinType) {
+      final RelOptCluster cluster = left.getCluster();
+      final RelMetadataQuery mq = cluster.getMetadataQuery();
+      final RelTraitSet traitSet =
+          cluster.traitSetOf(EnumerableConvention.INSTANCE)
+              .replaceIfs(RelCollationTraitDef.INSTANCE,
+                  () -> RelMdCollation.enumerableCorrelate(mq, left, right, joinType));
+      return new JdbcCorrelate(cluster, traitSet, left, right, correlationId, requiredColumns,
+          joinType);
+    }
+
+    @Override public JdbcCorrelate copy(RelTraitSet traitSet,
+        RelNode left, RelNode right, CorrelationId correlationId,
+        ImmutableBitSet requiredColumns, JoinRelType joinType) {
+      return new JdbcCorrelate(getCluster(), traitSet, left, right, correlationId, requiredColumns,
+          joinType);
+    }
+
+
+    @Override public JdbcImplementor.Result implement(JdbcImplementor implementor) {
+      return implementor.implement(this);
+    }
+
   }
 
   /** Rule that converts a table-modification to JDBC. */
