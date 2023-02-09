@@ -130,20 +130,91 @@ class JdbcAdapterTest {
   }
 
   /** Test case for
+   * <a href="https://issues.apache.org/jira/browse/CALCITE-657">[CALCITE-657]
+   * NullPointerException when executing JdbcAggregate implement method</a>. */
+  @Test void testJdbcUnnest() throws Exception {
+    final String url = MultiJdbcSchemaJoinTest.TempDb.INSTANCE.getUrl();
+    Connection baseConnection = DriverManager.getConnection(url);
+    Statement baseStmt = baseConnection.createStatement();
+    baseStmt.execute("CREATE TABLE T2 (\n"
+        + "ID INTEGER,\n"
+        + "V1 INTEGER ARRAY,"
+        + "V2 INTEGER ARRAY)");
+    baseStmt.execute("INSERT INTO T2 VALUES (1, ARRAY[3,4], ARRAY[10,11])");
+    baseStmt.execute("INSERT INTO T2 VALUES (2, ARRAY[5,6], ARRAY[12,131])");
+    baseStmt.close();
+    baseConnection.commit();
+
+    Properties info = new Properties();
+    info.put("model",
+        "inline:"
+            + "{\n"
+            + "  version: '1.0',\n"
+            + "  defaultSchema: 'BASEJDBC',\n"
+            + "  schemas: [\n"
+            + "     {\n"
+            + "       type: 'jdbc',\n"
+            + "       name: 'BASEJDBC',\n"
+            + "       jdbcDriver: '" + jdbcDriver.class.getName() + "',\n"
+            + "       jdbcUrl: '" + url + "',\n"
+            + "       jdbcCatalog: null,\n"
+            + "       jdbcSchema: null\n"
+            + "     }\n"
+            + "  ]\n"
+            + "}");
+
+    final Connection calciteConnection =
+        DriverManager.getConnection("jdbc:calcite:", info);
+    ResultSet rs = calciteConnection
+        .prepareStatement("SELECT ID, X FROM T2, UNNEST(T2.V1) T(X)").executeQuery();
+
+    assertThat(rs.next(), is(true));
+    assertThat(rs.getObject(1), equalTo(1));
+    assertThat(rs.getObject(2), equalTo(3));
+    assertThat(rs.next(), is(true));
+    assertThat(rs.getObject(1), equalTo(1));
+    assertThat(rs.getObject(2), equalTo(4));
+
+    rs.close();
+
+    rs = calciteConnection
+          .prepareStatement("SELECT * FROM T2, UNNEST(V1) T(X)").executeQuery();
+
+    rs.close();
+
+    rs = calciteConnection.prepareStatement(
+            "SELECT ID, T.X, R.Y \"hello\" FROM T2, UNNEST(V1) T(X), UNNEST(V2) R(Y)")
+        .executeQuery();
+
+    int count = 0;
+    while (rs.next()) {
+      count++;
+    }
+    assertThat(count, is(8));
+
+    rs.close();
+
+    calciteConnection.close();
+  }
+
+
+  /** Test case for
    * <a href="https://issues.apache.org/jira/browse/CALCITE-5354">[CALCITE-5354]
    * JDBC with UNNEST not working</a>. */
   @Test void testUnnest() {
     CalciteAssert.AssertThat assertThat = CalciteAssert.model(FoodmartSchema.FOODMART_MODEL);
     assertThat.query("SELECT * FROM \"store\" A\n"
-            + "NATURAL JOIN UNNEST(SELECT ARRAY[A.\"store_id\"])\n")
+            + "NATURAL JOIN UNNEST(ARRAY[A.\"store_id\"])\n")
         .runs()
-        .explainContains("PLAN=EnumerableNestedLoopJoin(condition=[true], joinType=[inner])\n"
-            + "  JdbcToEnumerableConverter\n"
-            + "    JdbcTableScan(table=[[foodmart, store]])\n"
-            + "  EnumerableUncollect\n"
-            + "    JdbcToEnumerableConverter\n"
-            + "      JdbcProject(variablesSet=[[$cor0]], EXPR$0=[ARRAY($cor0.store_id)])\n"
-            + "        JdbcValues(tuples=[[{ 0 }]])\n")
+        .explainContains("PLAN=JdbcToEnumerableConverter\n"
+            + "  JdbcProject(store_id=[$0], store_type=[$1], region_id=[$2], store_name=[$3], store_number=[$4], store_street_address=[$5], store_city=[$6], store_state=[$7], store_postal_code=[$8], store_country=[$9], store_manager=[$10], store_phone=[$11], store_fax=[$12], first_opened_date=[$13], last_remodel_date=[$14], store_sqft=[$15], grocery_sqft=[$16], frozen_sqft=[$17], meat_sqft=[$18], coffee_bar=[$19], video_store=[$20], salad_bar=[$21], prepared_food=[$22], florist=[$23], EXPR$0=[$25])\n"
+            + "    JdbcCorrelate(correlation=[$cor0], joinType=[inner], requiredColumns=[{24}])\n"
+            + "      JdbcProject(store_id=[$0], store_type=[$1], region_id=[$2], store_name=[$3], store_number=[$4], store_street_address=[$5], store_city=[$6], store_state=[$7], store_postal_code=[$8], store_country=[$9], store_manager=[$10], store_phone=[$11], store_fax=[$12], first_opened_date=[$13], last_remodel_date=[$14], store_sqft=[$15], grocery_sqft=[$16], frozen_sqft=[$17], meat_sqft=[$18], coffee_bar=[$19], video_store=[$20], salad_bar=[$21], prepared_food=[$22], florist=[$23], $f24=[ARRAY($0)])\n"
+            + "        JdbcTableScan(table=[[foodmart, store]])\n"
+            + "      JdbcUncollect\n"
+            + "        JdbcProject(EXPR$0=[$cor0.$f24])\n"
+            + "          JdbcValues(tuples=[[{ 0 }]])\n"
+            + "\n")
         .returnsCount(25);
 
     assertThat
