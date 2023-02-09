@@ -404,33 +404,38 @@ public class RelToSqlConverter extends SqlImplementor
 
   /** Visits a Correlate; called by {@link #dispatch} via reflection. */
   public Result visit(Correlate e) {
-    final Result leftResult =
-        visitInput(e, 0)
-            .resetAlias(e.getCorrelVariable(), e.getInput(0).getRowType());
+    boolean isUncollect = e.getRight() instanceof Uncollect;
+    Result leftResult = visitInput(e, 0);
+    if (!isUncollect) {
+      leftResult = leftResult.resetAlias(e.getCorrelVariable(), e.getRowType());
+    }
     parseCorrelTable(e, leftResult);
     final Result rightResult = visitInput(e, 1);
-    final SqlNode rightResultNode = rightResult.node;
-    final SqlIdentifier id =
-        new SqlIdentifier(
-            requireNonNull(rightResult.neededAlias,
-                () -> "rightResult.neededAlias is null, node is " + rightResultNode), POS);
-    SqlNode rightLateral =
-        SqlStdOperatorTable.LATERAL.createCall(POS, rightResultNode);
-    SqlNode rightLateralAs;
-    if (rightResultNode.getKind() == SqlKind.AS) {
-      // If node already is an AS node, we need to replace the alias
-      // For example:
-      // Before: AS "t1" ("xs") AS "t10"
-      // Now：AS "t10" ("xs")
-      SqlCall sqlRightCall = (SqlCall) rightResultNode;
-      List<SqlNode> operands = new ArrayList<>(sqlRightCall.getOperandList());
-      rightLateral =
-          SqlStdOperatorTable.LATERAL.createCall(POS, operands.get(0));
-      operands.set(0, rightLateral);
-      operands.set(1, id);
-      rightLateralAs =  SqlStdOperatorTable.AS.createCall(POS, operands);
-    } else {
-      rightLateralAs =  SqlStdOperatorTable.AS.createCall(POS, rightLateral, id);
+    SqlNode rightResultNode = rightResult.node;
+    if (!isUncollect) {
+      final SqlIdentifier id =
+          new SqlIdentifier(
+              requireNonNull(rightResult.neededAlias,
+                  "rightResult.neededAlias is null, node is " + rightResultNode), POS);
+      SqlNode rightLateral =
+          SqlStdOperatorTable.LATERAL.createCall(POS, rightResultNode);
+      SqlNode rightLateralAs;
+      if (rightResultNode.getKind() == SqlKind.AS) {
+        // If node already is an AS node, we need to replace the alias
+        // For example:
+        // Before: AS "t1" ("xs") AS "t10"
+        // Now：AS "t10" ("xs")
+        SqlCall sqlRightCall = (SqlCall) rightResultNode;
+        List<SqlNode> operands = new ArrayList<>(sqlRightCall.getOperandList());
+        rightLateral =
+            SqlStdOperatorTable.LATERAL.createCall(POS, operands.get(0));
+        operands.set(0, rightLateral);
+        operands.set(1, id);
+        rightLateralAs = SqlStdOperatorTable.AS.createCall(POS, operands);
+      } else {
+        rightLateralAs = SqlStdOperatorTable.AS.createCall(POS, rightLateral, id);
+      }
+      rightResultNode = rightLateralAs;
     }
 
     final SqlNode join =
@@ -438,7 +443,7 @@ public class RelToSqlConverter extends SqlImplementor
             leftResult.asFrom(),
             SqlLiteral.createBoolean(false, POS),
             JoinType.COMMA.symbol(POS),
-            rightLateralAs,
+            rightResultNode,
             JoinConditionType.NONE.symbol(POS),
             null);
     return result(join, leftResult, rightResult);
@@ -1336,6 +1341,19 @@ public class RelToSqlConverter extends SqlImplementor
 
   public Result visit(Uncollect e) {
     final Result x = visitInput(e, 0);
+    SqlNode node = x.asStatement();
+    if (node instanceof SqlSelect) {
+      SqlSelect select = (SqlSelect) node;
+      if (select.getFrom() instanceof SqlBasicCall) {
+        SqlBasicCall from = (SqlBasicCall) select.getFrom();
+        if (from.getOperandList().get(0) instanceof  SqlBasicCall) {
+          SqlBasicCall operand = (SqlBasicCall) from.getOperandList().get(0);
+          if (operand.getOperator().kind == SqlKind.VALUES) {
+            node = select.getSelectList();
+          }
+        }
+      }
+    }
     final SqlOperator operator =
         e.withOrdinality ? SqlStdOperatorTable.UNNEST_WITH_ORDINALITY : SqlStdOperatorTable.UNNEST;
     final SqlNode unnestNode = operator.createCall(POS, x.asStatement());
