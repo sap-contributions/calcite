@@ -16,6 +16,8 @@
  */
 package org.apache.calcite.test;
 
+import org.apache.calcite.adapter.enumerable.EnumerableConvention;
+import org.apache.calcite.adapter.enumerable.EnumerableLimit;
 import org.apache.calcite.adapter.enumerable.EnumerableMergeJoin;
 import org.apache.calcite.config.CalciteSystemProperty;
 import org.apache.calcite.linq4j.tree.Types;
@@ -74,6 +76,7 @@ import org.apache.calcite.rel.metadata.ReflectiveRelMetadataProvider;
 import org.apache.calcite.rel.metadata.RelColumnOrigin;
 import org.apache.calcite.rel.metadata.RelMdCollation;
 import org.apache.calcite.rel.metadata.RelMdColumnUniqueness;
+import org.apache.calcite.rel.metadata.RelMdPopulationSize;
 import org.apache.calcite.rel.metadata.RelMdUtil;
 import org.apache.calcite.rel.metadata.RelMetadataProvider;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
@@ -3048,25 +3051,93 @@ public class RelMetadataTest extends SqlToRelTestBase {
 
   @Test void testNodeTypeCountFilterAggregateEmptyKey() {
     final String sql = "select count(*) from emp where 1 = 0";
-    final Map<Class<? extends RelNode>, Integer> expected = new HashMap<>();
-    expected.put(TableScan.class, 1);
-    expected.put(Project.class, 1);
-    expected.put(Filter.class, 1);
-    expected.put(Aggregate.class, 1);
-    checkNodeTypeCount(sql, expected);
+    sql(sql)
+        .assertThatNodeTypeCountIs(TableScan.class, 1,
+            Project.class, 1,
+            Filter.class, 1,
+            Aggregate.class, 1);
   }
 
-  private static final SqlOperator NONDETERMINISTIC_OP = new SqlSpecialOperator(
-          "NDC",
-          SqlKind.OTHER_FUNCTION,
-          0,
-          false,
-          ReturnTypes.BOOLEAN,
-          null, null) {
-    @Override public boolean isDeterministic() {
-      return false;
-    }
-  };
+  @Test void testConstColumnsNdv() {
+    final String sql = "select ename, 100, 200 from emp";
+    final RelNode rel = sql(sql).toRel();
+    RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
+
+    assertThat(rel, instanceOf(Project.class));
+
+    Project project = (Project) rel;
+    assertThat(project.getProjects(), hasSize(3));
+
+    // a non-const column, followed by two constant columns.
+    assertThat(RexUtil.isLiteral(project.getProjects().get(0), true), is(false));
+    assertThat(RexUtil.isLiteral(project.getProjects().get(1), true), is(true));
+    assertThat(RexUtil.isLiteral(project.getProjects().get(2), true), is(true));
+
+    // the distinct row count of const columns should be 1
+    assertThat(mq.getDistinctRowCount(rel, bitSetOf(), null), is(1.0));
+    assertThat(mq.getDistinctRowCount(rel, bitSetOf(1), null), is(1.0));
+    assertThat(mq.getDistinctRowCount(rel, bitSetOf(1, 2), null), is(1.0));
+
+    // the population size of const columns should be 1
+    assertThat(mq.getPopulationSize(rel, bitSetOf()), is(1.0));
+    assertThat(mq.getPopulationSize(rel, bitSetOf(1)), is(1.0));
+    assertThat(mq.getPopulationSize(rel, bitSetOf(1, 2)), is(1.0));
+
+    // the distinct row count of mixed columns depends on the distinct row
+    // count of non-const columns
+    assertThat(mq.getDistinctRowCount(rel, bitSetOf(0, 1), null),
+        is(mq.getDistinctRowCount(rel, bitSetOf(0), null)));
+    assertThat(mq.getDistinctRowCount(rel, bitSetOf(0, 1, 2), null),
+        is(mq.getDistinctRowCount(rel, bitSetOf(0), null)));
+
+    // the population size of mixed columns depends on the population size of
+    // non-const columns
+    assertThat(mq.getPopulationSize(rel, bitSetOf(0, 1)),
+        is(mq.getPopulationSize(rel, bitSetOf(0))));
+    assertThat(mq.getPopulationSize(rel, bitSetOf(0, 1, 2)),
+        is(mq.getPopulationSize(rel, bitSetOf(0))));
+  }
+
+  /**
+   * Test that RelMdPopulationSize is calculated based on the RelMetadataQuery#getRowCount().
+   *
+   * @see <a href="https://issues.apache.org/jira/browse/CALCITE-5647">[CALCITE-5647]</a>
+   */
+  @Test public void testPopulationSizeFromValues() {
+    final String sql = "values(1,2,3),(1,2,3),(1,2,3),(1,2,3)";
+    final RelNode rel = sql(sql).toRel();
+    assertThat(rel, instanceOf(Values.class));
+
+    RelMetadataProvider provider = RelMdPopulationSize.SOURCE;
+
+    List<MetadataHandler<?>> handlers =
+        provider.handlers(BuiltInMetadata.PopulationSize.Handler.class);
+
+    // The population size is calculated to be half the row count. (The assumption is that half
+    // the rows are duplicated.) With the default handler it should evaluate to 2 since there
+    // are 4 rows.
+    RelMdPopulationSize populationSize = (RelMdPopulationSize) handlers.get(0);
+    Double popSize =
+        populationSize.getPopulationSize((Values) rel, rel.getCluster().getMetadataQuery(),
+            bitSetOf(0, 1, 2));
+    assertEquals(2.0, popSize);
+
+    // If we use a custom RelMetadataQuery and override the row count, the population size
+    // should be half the reported row count. In this case we will have the RelMetadataQuery say
+    // the row count is 12 for testing purposes, so we should expect a population size of 6.
+    RelMetadataQuery customQuery = new RelMetadataQuery() {
+      @Override public Double getRowCount(RelNode rel) {
+        return 12.0;
+      }
+    };
+
+    popSize = populationSize.getPopulationSize((Values) rel, customQuery, bitSetOf(0, 1, 2));
+    assertEquals(6.0, popSize);
+  }
+
+  private static final SqlOperator NONDETERMINISTIC_OP =
+      SqlBasicFunction.create("NDC", ReturnTypes.BOOLEAN, OperandTypes.VARIADIC)
+          .withDeterministic(false);
 
   /** Tests calling {@link RelMetadataQuery#getTableOrigin} for
    * an aggregate with no columns. Previously threw. */
