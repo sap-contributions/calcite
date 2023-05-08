@@ -4432,25 +4432,27 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
         break;
       }
     } else if (query.getKind() == SqlKind.WITH) {
-     // The modality of WITH clause depends on its body
-     // For example:
-     // SQL: WITH STREAMTABLE AS (SELECT STREAM * FROM KAFKA.MOCKTABLE) SELECT * FROM STREAMTABLE
-     // The modality should be RELATION.
-     // SQL: WITH STREAMTABLE AS (SELECT STREAM * FROM KAFKA.MOCKTABLE)
-     //      SELECT STREAM * FROM STREAMTABLE
-     // The modality should be STREAM.
-      validateModality(((SqlWith) query).body);
+      SqlWith with = (SqlWith) query;
+      for (SqlNode item : with.withList) {
+        SqlNode operand = ((SqlWithItem) item).query;
+        validateModality(operand, modality);
+      }
+      validateModality(with.body, modality);
     } else {
       assert query.isA(SqlKind.SET_QUERY);
       final SqlCall call = (SqlCall) query;
       for (SqlNode operand : call.getOperandList()) {
-        if (deduceModality(operand) != modality) {
-          throw newValidationError(operand,
-              Static.RESOURCE.streamSetOpInconsistentInputs());
-        }
-        validateModality(operand);
+        validateModality(operand, modality);
       }
     }
+  }
+
+  private  void validateModality(SqlNode operand, SqlModality modality) {
+    if (deduceModality(operand) != modality) {
+      throw newValidationError(operand,
+          Static.RESOURCE.streamSetOpInconsistentInputs());
+    }
+    validateModality(operand);
   }
 
   /** Return the intended modality of a SELECT or set-op. */
