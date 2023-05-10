@@ -4037,7 +4037,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     }
   }
 
-  private  void validateModality(SqlNode operand, SqlModality modality) {
+  private void validateModality(SqlNode operand, SqlModality modality) {
     if (deduceModality(operand) != modality) {
       throw newValidationError(operand,
           Static.RESOURCE.streamSetOpInconsistentInputs());
