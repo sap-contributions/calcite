@@ -714,8 +714,12 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
    * @see org.apache.calcite.plan.volcano.RelSubset#bestCost
    */
   private RelOptCost getCostOrInfinite(RelNode rel, RelMetadataQuery mq) {
-    RelOptCost cost = getCost(rel, mq);
-    return cost == null ? infCost : cost;
+    try {
+      RelOptCost cost = getCost(rel, mq);
+      return cost == null ? infCost : cost;
+    } catch (CyclicMetadataException exc) {
+      return infCost;
+    }
   }
 
   @Override public @Nullable RelOptCost getCost(RelNode rel, RelMetadataQuery mq) {
