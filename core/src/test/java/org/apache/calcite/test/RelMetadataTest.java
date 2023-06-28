@@ -1677,8 +1677,8 @@ public class RelMetadataTest {
     assertThat(collations.get(0).getFieldCollations().get(1).getFieldIndex(),
         equalTo(0));
 
-    final LogicalProject project = LogicalProject.create(empSort,
-        ImmutableList.of(),
+    final LogicalProject project =
+        LogicalProject.create(empSort, ImmutableList.of(),
         projects,
         ImmutableList.of("a", "b", "c", "d"),
         ImmutableSet.of());

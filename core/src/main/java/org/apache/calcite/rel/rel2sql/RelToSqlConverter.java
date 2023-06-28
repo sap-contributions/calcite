@@ -1291,8 +1291,9 @@ public class RelToSqlConverter extends SqlImplementor
       }
     }
     final SqlNode unnestNode = SqlStdOperatorTable.UNNEST.createCall(POS, node);
-    final List<SqlNode> operands = createAsFullOperands(e.getRowType(), unnestNode,
-        requireNonNull(x.neededAlias, () -> "x.neededAlias is null, node is " + x.node));
+    final String neededAlias =
+        requireNonNull(x.neededAlias, () -> "x.neededAlias is null, node is " + x.node);
+    final List<SqlNode> operands = createAsFullOperands(e.getRowType(), unnestNode, neededAlias);
     final SqlNode asNode = SqlStdOperatorTable.AS.createCall(POS, operands);
     return result(asNode, ImmutableList.of(Clause.FROM), e, null);
   }
