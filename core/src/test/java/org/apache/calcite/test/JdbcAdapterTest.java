@@ -216,8 +216,8 @@ class JdbcAdapterTest {
 
     rs.close();
 
-    rs = calciteConnection.prepareStatement(
-            "SELECT ID, T.X, R.Y \"hello\" FROM T2, UNNEST(V1) T(X), UNNEST(V2) R(Y)")
+    rs = calciteConnection
+        .prepareStatement("SELECT ID, T.X, R.Y \"hello\" FROM T2, UNNEST(V1) T(X), UNNEST(V2) R(Y)")
         .executeQuery();
 
     int count = 0;
