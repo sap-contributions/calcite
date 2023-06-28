@@ -161,8 +161,8 @@ class TraitPropagationTest {
 
       // project s column
 
-      RelNode project = LogicalProject.create(rt1,
-          ImmutableList.of(),
+      RelNode project =
+          LogicalProject.create(rt1, ImmutableList.of(),
           ImmutableList.of(
               (RexNode) rexBuilder.makeInputRef(stringType, 0),
               rexBuilder.makeInputRef(integerType, 1)),
