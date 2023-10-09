@@ -157,11 +157,10 @@ public class EnumerableRelImplementor extends JavaRelImplementor {
     final Collection<Statement> stashed =
         Collections2.transform(stashedParameters.values(),
             input -> Expressions.declare(Modifier.FINAL, input,
-                Expressions.convert_(
-                    Expressions.call(DataContext.ROOT,
-                        BuiltInMethod.DATA_CONTEXT_GET.method,
-                        Expressions.constant(input.name)),
-                    input.type)));
+                Expressions.call(DataContext.ROOT,
+                    BuiltInMethod.DATA_CONTEXT_GET_TYPED.method,
+                    Expressions.constant(input.name),
+                    Expressions.constant(input.type))));
 
     final BlockStatement block =
         Expressions.block(

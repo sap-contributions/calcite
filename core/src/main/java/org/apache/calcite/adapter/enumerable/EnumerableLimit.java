@@ -121,11 +121,9 @@ public class EnumerableLimit extends SingleRel implements EnumerableRel {
   static Expression getExpression(RexNode rexNode) {
     if (rexNode instanceof RexDynamicParam) {
       final RexDynamicParam param = (RexDynamicParam) rexNode;
-      return Expressions.convert_(
-          Expressions.call(DataContext.ROOT,
-              BuiltInMethod.DATA_CONTEXT_GET.method,
-              Expressions.constant("?" + param.getIndex())),
-          Integer.class);
+      return Expressions.call(DataContext.ROOT,
+              BuiltInMethod.DATA_CONTEXT_GET_TYPED.method,
+              Expressions.constant("?" + param.getIndex()),Expressions.constant(Integer.class));
     } else {
       return Expressions.constant(RexLiteral.intValue(rexNode));
     }
