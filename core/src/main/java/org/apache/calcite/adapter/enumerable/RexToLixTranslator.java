@@ -1358,8 +1358,9 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
         ? currentStorageType : typeFactory.getJavaClass(dynamicParam.getType());
     final Expression valueExpression =
         EnumUtils.convert(
-            Expressions.call(root, BuiltInMethod.DATA_CONTEXT_GET.method,
-                Expressions.constant("?" + dynamicParam.getIndex())),
+            Expressions.call(root, BuiltInMethod.DATA_CONTEXT_GET_TYPED.method,
+                Expressions.constant("?" + dynamicParam.getIndex()),
+                Expressions.constant(storageType)),
             storageType);
     final ParameterExpression valueVariable =
         Expressions.parameter(valueExpression.getType(),
