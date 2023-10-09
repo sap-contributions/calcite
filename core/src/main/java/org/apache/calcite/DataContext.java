@@ -69,6 +69,19 @@ public interface DataContext {
    */
   @Nullable Object get(String name);
 
+  /**
+   * Returns a context variable.
+   *
+   * <p>Supported variables include: "sparkContext", "currentTimestamp",
+   * "localTimestamp".</p>
+   *
+   * @param name Name of variable
+   * @param clazz Type of variable
+   */
+  @Nullable default <T> T get(String name, Class<T> clazz){
+    return (T) get(name);
+  }
+
   /** Variable that may be asked for in a call to {@link DataContext#get}. */
   enum Variable {
     UTC_TIMESTAMP("utcTimestamp", Long.class),
