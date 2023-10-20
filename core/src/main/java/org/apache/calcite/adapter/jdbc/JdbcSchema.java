@@ -266,10 +266,10 @@ public class JdbcSchema implements Schema, Wrapper {
         final DatabaseMetaData metaData = connection.getMetaData();
         resultSet = metaData.getTables(catalog, schema, null, null);
         while (resultSet.next()) {
-          final String catalogName = resultSet.getString(1);
-          final String schemaName = resultSet.getString(2);
-          final String tableName = resultSet.getString(3);
-          final String tableTypeName = resultSet.getString(4);
+          final String catalogName = intern(resultSet.getString(1));
+          final String schemaName = intern(resultSet.getString(2));
+          final String tableName = intern(resultSet.getString(3));
+          final String tableTypeName = intern(resultSet.getString(4));
           tableDefList.add(
               new MetaImpl.MetaTable(catalogName, schemaName, tableName,
                   tableTypeName));
@@ -280,27 +280,9 @@ public class JdbcSchema implements Schema, Wrapper {
       final ImmutableMap.Builder<String, JdbcTable> builder =
           ImmutableMap.builder();
       for (MetaImpl.MetaTable tableDef : tableDefs) {
-        // Clean up table type. In particular, this ensures that 'SYSTEM TABLE',
-        // returned by Phoenix among others, maps to TableType.SYSTEM_TABLE.
-        // We know enum constants are upper-case without spaces, so we can't
-        // make things worse.
-        //
-        // PostgreSQL returns tableTypeName==null for pg_toast* tables
-        // This can happen if you start JdbcSchema off a "public" PG schema
-        // The tables are not designed to be queried by users, however we do
-        // not filter them as we keep all the other table types.
-        final String tableTypeName2 =
-            tableDef.tableType == null
-            ? null
-            : tableDef.tableType.toUpperCase(Locale.ROOT).replace(' ', '_');
-        final TableType tableType =
-            Util.enumVal(TableType.OTHER, tableTypeName2);
-        if (tableType == TableType.OTHER  && tableTypeName2 != null) {
-          LOGGER.info("Unknown table type: {}", tableTypeName2);
-        }
         final JdbcTable table =
             new JdbcTable(this, tableDef.tableCat, tableDef.tableSchem,
-                tableDef.tableName, tableType);
+                tableDef.tableName, getTableType(tableDef.tableType));
         builder.put(tableDef.tableName, table);
       }
       return builder.build();
@@ -310,6 +292,32 @@ public class JdbcSchema implements Schema, Wrapper {
     } finally {
       close(connection, null, resultSet);
     }
+  }
+
+  private static String intern(@Nullable String string) {
+    if ( string == null) return null;
+    return string.intern();
+  }
+  private static TableType getTableType(String tableTypeName) {
+    // Clean up table type. In particular, this ensures that 'SYSTEM TABLE',
+    // returned by Phoenix among others, maps to TableType.SYSTEM_TABLE.
+    // We know enum constants are upper-case without spaces, so we can't
+    // make things worse.
+    //
+    // PostgreSQL returns tableTypeName==null for pg_toast* tables
+    // This can happen if you start JdbcSchema off a "public" PG schema
+    // The tables are not designed to be queried by users, however we do
+    // not filter them as we keep all the other table types.
+    final String tableTypeName2 =
+        tableTypeName == null
+        ? null
+        : tableTypeName.toUpperCase(Locale.ROOT).replace(' ', '_');
+    final TableType tableType =
+        Util.enumVal(TableType.OTHER, tableTypeName2);
+    if (tableType == TableType.OTHER  && tableTypeName2 != null) {
+      LOGGER.info("Unknown table type: {}", tableTypeName2);
+    }
+    return tableType;
   }
 
   /** Returns [major, minor] version from a database metadata. */
