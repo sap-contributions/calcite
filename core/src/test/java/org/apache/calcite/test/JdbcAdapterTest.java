@@ -1232,31 +1232,31 @@ class JdbcAdapterTest {
 
   @Test void testMerge() throws Exception {
     final String sql = "merge into \"foodmart\".\"expense_fact\"\n"
-        + "using (values(666, 42)) as vals(store_id, amount)\n"
-        + "on \"expense_fact\".\"store_id\" = vals.store_id\n"
-        + "when matched then update\n"
-        + "set \"amount\" = vals.amount\n"
-        + "when not matched then insert\n"
-        + "values (vals.store_id, 666, TIMESTAMP '1997-01-01 00:00:00', 666, '666', 666,"
-        + " vals.amount)";
+                       + "using (values(666, 42)) as vals(store_id, amount)\n"
+                       + "on \"expense_fact\".\"store_id\" = vals.store_id\n"
+                       + "when matched then update\n"
+                       + "set \"amount\" = vals.amount\n"
+                       + "when not matched then insert\n"
+                       + "values (vals.store_id, 666, TIMESTAMP '1997-01-01 00:00:00', 666, '666', 666,"
+                       + " vals.amount)";
     final String explain = "PLAN=JdbcToEnumerableConverter\n"
-        + "  JdbcTableModify(table=[[foodmart, expense_fact]], operation=[MERGE],"
-        + " updateColumnList=[[amount]], flattened=[false])\n"
-        + "    JdbcProject(STORE_ID=[$0], $f1=[666], $f2=[1997-01-01 00:00:00], $f3=[666],"
-        + " $f4=['666'], $f5=[666], AMOUNT=[CAST($1):DECIMAL(10, 4) NOT NULL], store_id=[$2],"
-        + " account_id=[$3], exp_date=[$4], time_id=[$5], category_id=[$6], currency_id=[$7],"
-        + " amount=[$8], AMOUNT0=[$1])\n"
-        + "      JdbcJoin(condition=[=($2, $0)], joinType=[left])\n"
-        + "        JdbcValues(tuples=[[{ 666, 42 }]])\n"
-        + "        JdbcTableScan(table=[[foodmart, expense_fact]])\n";
+                           + "  JdbcTableModify(table=[[foodmart, expense_fact]], operation=[MERGE],"
+                           + " updateColumnList=[[amount]], flattened=[false])\n"
+                           + "    JdbcProject(STORE_ID=[$0], $f1=[666], $f2=[1997-01-01 00:00:00], $f3=[666],"
+                           + " $f4=['666'], $f5=[666], AMOUNT=[CAST($1):DECIMAL(10, 4) NOT NULL], store_id=[$2],"
+                           + " account_id=[$3], exp_date=[$4], time_id=[$5], category_id=[$6], currency_id=[$7],"
+                           + " amount=[$8], AMOUNT0=[$1])\n"
+                           + "      JdbcJoin(condition=[=($2, $0)], joinType=[left])\n"
+                           + "        JdbcValues(tuples=[[{ 666, 42 }]])\n"
+                           + "        JdbcTableScan(table=[[foodmart, expense_fact]])\n";
     final String jdbcSql = "MERGE INTO \"foodmart\".\"expense_fact\"\n"
-        + "USING (VALUES (666, 42)) AS \"t\" (\"STORE_ID\", \"AMOUNT\")\n"
-        + "ON \"t\".\"STORE_ID\" = \"expense_fact\".\"store_id\"\n"
-        + "WHEN MATCHED THEN UPDATE SET \"amount\" = \"t\".\"AMOUNT\"\n"
-        + "WHEN NOT MATCHED THEN INSERT (\"store_id\", \"account_id\", \"exp_date\", \"time_id\", "
-        + "\"category_id\", \"currency_id\", \"amount\") VALUES \"t\".\"STORE_ID\",\n"
-        + "666,\nTIMESTAMP '1997-01-01 00:00:00',\n666,\n'666',\n666,\n"
-        + "CAST(\"t\".\"AMOUNT\" AS DECIMAL(10, 4))";
+                           + "USING (VALUES (666, 42)) AS \"t\" (\"STORE_ID\", \"AMOUNT\")\n"
+                           + "ON \"t\".\"STORE_ID\" = \"expense_fact\".\"store_id\"\n"
+                           + "WHEN MATCHED THEN UPDATE SET \"amount\" = \"t\".\"AMOUNT\"\n"
+                           + "WHEN NOT MATCHED THEN INSERT (\"store_id\", \"account_id\", \"exp_date\", \"time_id\", "
+                           + "\"category_id\", \"currency_id\", \"amount\") VALUES \"t\".\"STORE_ID\",\n"
+                           + "666,\nTIMESTAMP '1997-01-01 00:00:00',\n666,\n'666',\n666,\n"
+                           + "CAST(\"t\".\"AMOUNT\" AS DECIMAL(10, 4))";
     final AssertThat that =
         CalciteAssert.model(FoodmartSchema.FOODMART_MODEL)
             .enable(CalciteAssert.DB == DatabaseInstance.HSQLDB);
@@ -1269,6 +1269,20 @@ class JdbcAdapterTest {
         throw TestUtil.rethrow(e);
       }
     });
+  }
+
+  @Test void testAmbiguousColumn() {
+    CalciteAssert.model(JdbcTest.FOODMART_SCOTT_MODEL)
+        .query("select\n" +
+            "                  \"store_id\" \"latest_id\",\n" +
+            "                  max(\"store_type\") \"latest_store_type\"\n" +
+            "                from\n" +
+            "                  ( SELECT \"store_id\",\"store_type\" FROM \"foodmart\".\"store\") \n" +
+            "                group by\n" +
+            "                  \"store_id\"")
+        .runs()
+        .enable(CalciteAssert.DB == CalciteAssert.DatabaseInstance.HSQLDB)
+        .planHasSql("SELECT \"store_id\" AS \"latest_id\", MAX(\"store_type\") AS \"latest_store_type\"\nFROM \"foodmart\".\"store\"\nGROUP BY \"store_id\"");
   }
 
   /** Acquires a lock, and releases it when closed. */
