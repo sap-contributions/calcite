@@ -1230,6 +1230,20 @@ class JdbcAdapterTest {
         .returns("C=null\nC=null\nC=null\nC=null\nC=null\nC=null\nC=null\n");
   }
 
+  @Test void testAmbiguousColumn() {
+    CalciteAssert.model(JdbcTest.FOODMART_SCOTT_MODEL)
+        .query("select\n" +
+            "                  \"store_id\" \"latest_id\",\n" +
+            "                  max(\"store_type\") \"latest_store_type\"\n" +
+            "                from\n" +
+            "                  ( SELECT \"store_id\",\"store_type\" FROM \"foodmart\".\"store\") \n" +
+            "                group by\n" +
+            "                  \"store_id\"")
+        .runs()
+        .enable(CalciteAssert.DB == CalciteAssert.DatabaseInstance.HSQLDB)
+        .planHasSql("SELECT \"store_id\" AS \"latest_id\", MAX(\"store_type\") AS \"latest_store_type\"\nFROM \"foodmart\".\"store\"\nGROUP BY \"store_id\"");
+  }
+
   /** Acquires a lock, and releases it when closed. */
   static class LockWrapper implements AutoCloseable {
     private final Lock lock;

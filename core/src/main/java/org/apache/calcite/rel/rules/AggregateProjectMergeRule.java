@@ -24,6 +24,7 @@ import org.apache.calcite.rel.core.Aggregate;
 import org.apache.calcite.rel.core.Aggregate.Group;
 import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.core.Project;
+import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.rex.RexInputRef;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.tools.RelBuilder;
@@ -96,12 +97,18 @@ public class AggregateProjectMergeRule
     // Build the map from old to new; abort if any entry is not a
     // straightforward field projection.
     final Map<Integer, Integer> map = new HashMap<>();
+    List<RelDataTypeField> inputFieldList = project.getInput().getRowType().getFieldList();
+    List<RelDataTypeField> projectFieldList = project.getRowType().getFieldList();
     for (int source : interestingFields) {
       final RexNode rex = project.getProjects().get(source);
       if (!(rex instanceof RexInputRef)) {
         return null;
       }
-      map.put(source, ((RexInputRef) rex).getIndex());
+      int inputIndex = ((RexInputRef) rex).getIndex();
+      if ( !inputFieldList.get(inputIndex).getName().equals(projectFieldList.get(source).getName())) {
+        return null;
+      }
+      map.put(source, inputIndex);
     }
 
     final ImmutableBitSet newGroupSet = aggregate.getGroupSet().permute(map);
