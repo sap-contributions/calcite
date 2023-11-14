@@ -813,11 +813,46 @@ public abstract class SqlImplementor {
           return toSql(program, (RexOver) rex);
         }
 
-        final RexCall call = (RexCall) stripCastFromString(rex, dialect);
-        SqlOperator op = call.getOperator();
-        switch (op.getKind()) {
-        case SUM0:
-          op = SqlStdOperatorTable.SUM;
+        return callToSql(program, (RexCall) rex, false);
+      }
+    }
+
+    private SqlNode callToSql(@Nullable RexProgram program, RexCall call0,
+        boolean not) {
+      final RexCall call1 = reverseCall(call0);
+      final RexCall call = (RexCall) stripCastFromString(call1, dialect);
+      SqlOperator op = call.getOperator();
+      switch (op.getKind()) {
+      case SUM0:
+        op = SqlStdOperatorTable.SUM;
+        break;
+      case NOT:
+        RexNode operand = call.operands.get(0);
+        if (getInverseOperator(operand) != null) {
+          return callToSql(program, (RexCall) operand, !not);
+        }
+        break;
+      default:
+        break;
+      }
+      if (not) {
+        op =
+            requireNonNull(getInverseOperator(call),
+                () -> "unable to negate " + call.getKind());
+      }
+      final List<SqlNode> nodeList = toSql(program, call.getOperands());
+      switch (call.getKind()) {
+      case CAST:
+      case SAFE_CAST:
+        // CURSOR is used inside CAST, like 'CAST ($0): CURSOR NOT NULL',
+        // convert it to sql call of {@link SqlStdOperatorTable#CURSOR}.
+        final RelDataType dataType = call.getType();
+        if (dataType.getSqlTypeName() == SqlTypeName.CURSOR) {
+          final RexNode operand0 = call.operands.get(0);
+          assert operand0 instanceof RexInputRef;
+          int ordinal = ((RexInputRef) operand0).getIndex();
+          SqlNode fieldOperand = field(ordinal);
+          return SqlStdOperatorTable.CURSOR.createCall(SqlParserPos.ZERO, fieldOperand);
         }
         final List<SqlNode> nodeList = toSql(program, call.getOperands());
         switch (call.getKind()) {
