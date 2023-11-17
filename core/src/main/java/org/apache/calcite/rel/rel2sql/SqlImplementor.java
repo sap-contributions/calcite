@@ -1553,7 +1553,7 @@ public abstract class SqlImplementor {
     }
   }
 
-  protected Context getAliasContext(RexCorrelVariable variable) {
+  protected Context getAliasContext(RexCorrelVariable variable){
     return requireNonNull(
         correlTableMap.get(variable.id),
         () -> "variable " + variable.id + " is not found");
