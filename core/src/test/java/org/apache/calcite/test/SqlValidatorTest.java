@@ -5386,6 +5386,13 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
         .type("RecordType(INTEGER NOT NULL UNO) NOT NULL");
   }
 
+  @Test void testWith2() {
+    sql("with it1 as (select empno, sal, deptno from emp)\n"
+        + "select * from ( select t1.empno as empno, max(t1.deptno) as deptno from it1 as t1 group by empno) as t\n"
+        + "left outer join it1 as t2 on t.empno = t2.empno and t.deptno = t2.deptno")
+        .ok();
+  }
+
   /** Tests the {@code WITH} clause with UNION. */
   @Test void testWithUnion() {
     // nested WITH (parentheses required - and even with parentheses SQL
