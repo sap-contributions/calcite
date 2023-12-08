@@ -203,8 +203,7 @@ public class ResultSetEnumerable<T> extends AbstractEnumerable<T> {
   private static void setDynamicParam(PreparedStatement preparedStatement,
       int i, @Nullable Object value) throws SQLException {
     if (value == null) {
-      // TODO: use proper type instead of ANY
-      preparedStatement.setObject(i, null, SqlType.ANY.id);
+      preparedStatement.setNull(i, Types.NULL);
     } else if (value instanceof Timestamp) {
       preparedStatement.setTimestamp(i, (Timestamp) value);
     } else if (value instanceof Time) {
