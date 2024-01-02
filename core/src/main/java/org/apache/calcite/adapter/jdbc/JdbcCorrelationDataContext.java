@@ -23,6 +23,8 @@ import org.apache.calcite.schema.SchemaPlus;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
 
+import static java.lang.Integer.parseInt;
+
 /**
  * A special DataContext which handles correlation variable for batch nested loop joins.
  */
@@ -36,6 +38,7 @@ public class JdbcCorrelationDataContext implements DataContext {
     this.delegate = delegate;
     this.parameters = parameters;
   }
+
   @Override public @Nullable SchemaPlus getRootSchema() {
     return delegate.getRootSchema();
   }
@@ -50,7 +53,7 @@ public class JdbcCorrelationDataContext implements DataContext {
 
   @Override public @Nullable Object get(String name) {
     if (name.startsWith("?")) {
-      int index = Integer.parseInt(name.substring(1));
+      int index = parseInt(name.substring(1));
       if (index >= OFFSET && index < OFFSET + parameters.length) {
         return parameters[index - OFFSET];
       }
