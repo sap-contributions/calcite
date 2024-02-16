@@ -51,7 +51,14 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.lang.reflect.Type;
 import java.sql.Connection;
-import java.util.*;
+import java.util.AbstractList;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.NoSuchElementException;
 
 import static com.google.common.base.Preconditions.checkState;
 
@@ -132,9 +139,9 @@ public final class Schemas {
     return call;
   }
 
-  public static SchemaPlus getExistingSubSchema(SchemaPlus schema, String name){
+  public static SchemaPlus getExistingSubSchema(SchemaPlus schema, String name) {
     SchemaPlus subSchema = schema.getSubSchema(name);
-    if ( subSchema == null ) {
+    if (subSchema == null) {
       throw new NoSuchElementException("Sub schema " +  name + " not found in " + schema.getName());
     }
     return subSchema;

@@ -105,7 +105,8 @@ public class AggregateProjectMergeRule
         return null;
       }
       int inputIndex = ((RexInputRef) rex).getIndex();
-      if ( !inputFieldList.get(inputIndex).getName().equals(projectFieldList.get(source).getName())) {
+      if (!inputFieldList.get(inputIndex).getName()
+          .equals(projectFieldList.get(source).getName())) {
         return null;
       }
       map.put(source, inputIndex);

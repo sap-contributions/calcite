@@ -70,7 +70,18 @@ import org.checkerframework.dataflow.qual.Pure;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.util.*;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Deque;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.IdentityHashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.PriorityQueue;
+import java.util.Set;
+import java.util.Stack;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -1112,7 +1123,7 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
       assert input instanceof RelSubset;
       final RelSubset subset = (RelSubset) input;
       RelSubset newSubset = canonize(subset);
-      if (hasCycle(rel,newSubset)) {
+      if (hasCycle(rel, newSubset)) {
         newInputs.add(input);
       } else {
         newInputs.add(newSubset);
@@ -1143,7 +1154,7 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
   private boolean hasCycle(RelNode rel, RelNode newInput) {
     Stack<Integer> visited = new Stack<>();
     visited.push(rel.getId());
-    return hasCycle(newInput,visited);
+    return hasCycle(newInput, visited);
   }
 
   private boolean hasCycle(RelNode node, Stack<Integer> visited) {
@@ -1151,7 +1162,7 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
       RelSubset subset = (RelSubset) node;
       node = subset.getBestOrOriginal();
     }
-    if ( visited.contains(node.getId()) ) {
+    if (visited.contains(node.getId())) {
       return true;
     }
     try {
@@ -1159,7 +1170,7 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
       List<RelNode> inputs = node.getInputs();
       for (RelNode input : inputs) {
         boolean cycle = hasCycle(input, visited);
-        if ( cycle) {
+        if (cycle) {
           return true;
         }
       }

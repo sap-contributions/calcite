@@ -78,7 +78,7 @@ public interface DataContext {
    * @param name Name of variable
    * @param clazz Type of variable
    */
-  @Nullable default <T> T get(String name, Class<T> clazz){
+  @Nullable default <T> T get(String name, Class<T> clazz) {
     return (T) get(name);
   }
 
