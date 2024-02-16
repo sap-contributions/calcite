@@ -673,9 +673,9 @@ public abstract class SqlImplementor {
           final RexCorrelVariable variable = (RexCorrelVariable) referencedExpr;
           final Context correlAliasContext = getAliasContext(variable);
           final RexFieldAccess lastAccess = requireNonNull(accesses.pollLast());
-          SqlNode node = (SqlIdentifier) correlAliasContext
+          SqlNode node  = correlAliasContext
               .field(lastAccess.getField().getIndex());
-          if ( node instanceof SqlDynamicParam) {
+          if (node instanceof SqlDynamicParam) {
             return node;
           }
           sqlIdentifier = (SqlIdentifier) node;
@@ -1545,12 +1545,6 @@ public abstract class SqlImplementor {
     }
   }
 
-  protected Context getAliasContext(RexCorrelVariable variable){
-    return requireNonNull(
-        correlTableMap.get(variable.id),
-        () -> "variable " + variable.id + " is not found");
-  }
-
   /** Simple implementation of {@link Context} that cannot handle sub-queries
    * or correlations. Because it is so simple, you do not need to create a
    * {@link SqlImplementor} or {@link org.apache.calcite.tools.RelBuilder}
@@ -1580,7 +1574,9 @@ public abstract class SqlImplementor {
     }
 
     @Override protected Context getAliasContext(RexCorrelVariable variable) {
-      return SqlImplementor.this.getAliasContext(variable);
+      return requireNonNull(
+          correlTableMap.get(variable.id),
+          () -> "variable " + variable.id + " is not found");
     }
 
     @Override public SqlImplementor implementor() {

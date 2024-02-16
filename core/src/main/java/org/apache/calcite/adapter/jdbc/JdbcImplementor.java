@@ -18,63 +18,20 @@ package org.apache.calcite.adapter.jdbc;
 
 import org.apache.calcite.adapter.java.JavaTypeFactory;
 import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.core.CorrelationId;
 import org.apache.calcite.rel.rel2sql.RelToSqlConverter;
-import org.apache.calcite.rel.rel2sql.SqlImplementor;
-import org.apache.calcite.rel.type.RelDataTypeField;
-import org.apache.calcite.rex.RexCorrelVariable;
 import org.apache.calcite.sql.SqlDialect;
-import org.apache.calcite.sql.SqlDynamicParam;
-import org.apache.calcite.sql.SqlNode;
-import org.apache.calcite.sql.parser.SqlParserPos;
-
-import java.lang.reflect.Type;
-import java.util.List;
+import org.apache.calcite.util.Util;
 
 /**
  * State for generating a SQL statement.
  */
 public class JdbcImplementor extends RelToSqlConverter {
-
-  private final JdbcCorrelationDataContextBuilder dataContextBuilder;
-  private final JavaTypeFactory typeFactory;
-
-  public JdbcImplementor(SqlDialect dialect, JavaTypeFactory typeFactory, JdbcCorrelationDataContextBuilder dataContextBuilder) {
-    super(dialect);
-    this. typeFactory= typeFactory;
-    this.dataContextBuilder = dataContextBuilder;
-  }
-
   public JdbcImplementor(SqlDialect dialect, JavaTypeFactory typeFactory) {
-    this(dialect, typeFactory, new JdbcCorrelationDataContextBuilder() {
-      private int counter = 1;
-      @Override
-      public int add(CorrelationId id, int ordinal, Type type) {
-        return counter++;
-      }
-    });
+    super(dialect);
+    Util.discard(typeFactory);
   }
 
   public Result implement(RelNode node) {
     return dispatch(node);
-  }
-
-  @Override
-  protected Context getAliasContext(RexCorrelVariable variable){
-    Context context = correlTableMap.get(variable.id);
-    if ( context != null) return context;
-    List<RelDataTypeField>  fieldList = variable.getType().getFieldList();
-    return new Context(dialect,fieldList.size()) {
-      @Override
-      public SqlNode field(int ordinal) {
-        RelDataTypeField field = fieldList.get(ordinal);
-        return new SqlDynamicParam(dataContextBuilder.add(variable.id,ordinal, typeFactory.getJavaClass(field.getType())),SqlParserPos.ZERO);
-      }
-
-      @Override
-      public SqlImplementor implementor() {
-        return JdbcImplementor.this;
-      }
-    };
   }
 }

@@ -105,9 +105,7 @@ public class JdbcToEnumerableConverter
     final JdbcConvention jdbcConvention =
         (JdbcConvention) requireNonNull(child.getConvention(),
             () -> "child.getConvention() is null for " + child);
-    JdbcCorrelationDataContextBuilderImpl dataContextBuilder = new JdbcCorrelationDataContextBuilderImpl(
-        implementor,builder0,DataContext.ROOT);
-    SqlString sqlString = generateSql(jdbcConvention.dialect,dataContextBuilder);
+    SqlString sqlString = generateSql(jdbcConvention.dialect);
     String sql = sqlString.getSql();
     if (CalciteSystemProperty.DEBUG.value()) {
       System.out.println("[" + sql + "]");
@@ -181,7 +179,7 @@ public class JdbcToEnumerableConverter
               Expressions.call(BuiltInMethod.CREATE_ENRICHER.method,
                   Expressions.newArrayInit(Integer.class, 1,
                       toIndexesTableExpression(sqlString)),
-                  dataContextBuilder.build()));
+                  DataContext.ROOT));
 
       enumerable =
           builder0.append("enumerable",
@@ -358,10 +356,10 @@ public class JdbcToEnumerableConverter
         : "get" + SqlFunctions.initcap(castNonNull(primitive.primitiveName));
   }
 
-  private SqlString generateSql(SqlDialect dialect, JdbcCorrelationDataContextBuilder dataContextBuilder) {
+  private SqlString generateSql(SqlDialect dialect) {
     final JdbcImplementor jdbcImplementor =
         new JdbcImplementor(dialect,
-            (JavaTypeFactory) getCluster().getTypeFactory(), dataContextBuilder);
+            (JavaTypeFactory) getCluster().getTypeFactory());
     final JdbcImplementor.Result result =
         jdbcImplementor.visitRoot(this.getInput());
     return result.asStatement().toSqlString(dialect);
