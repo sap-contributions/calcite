@@ -219,7 +219,7 @@ public class JdbcToEnumerableConverter
               Expressions.call(BuiltInMethod.CREATE_ENRICHER.method,
                   Expressions.newArrayInit(Integer.class, 1,
                       toIndexesTableExpression(sqlString)),
-                  dataContextBuilder.build()));
+                  DataContext.ROOT));
 
       enumerable =
           builder0.append("enumerable",
