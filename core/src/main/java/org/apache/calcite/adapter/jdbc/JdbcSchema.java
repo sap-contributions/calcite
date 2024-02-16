@@ -294,7 +294,9 @@ public class JdbcSchema implements Schema {
   }
 
   private static String intern(@Nullable String string) {
-    if ( string == null) return null;
+    if (string == null) {
+      return null;
+    }
     return string.intern();
   }
   private static TableType getTableType(String tableTypeName) {
