@@ -625,8 +625,8 @@ class JdbcAdapterTest {
         + "INNER JOIN ((SELECT \"COMM\", \"DEPTNO\"\n"
         + "FROM \"SCOTT\".\"EMP\") AS \"t0\" INNER JOIN (SELECT \"DEPTNO\", \"DNAME\"\n"
         + "FROM \"SCOTT\".\"DEPT\"\n"
-        + "WHERE \"DNAME\" LIKE '%A%') AS \"t2\" ON \"t0\".\"DEPTNO\" = \"t2\".\"DEPTNO\") ON " +
-        "\"t\".\"HISAL\" = \"t0\".\"COMM\"\n"
+        + "WHERE \"DNAME\" LIKE '%A%') AS \"t2\" ON \"t0\".\"DEPTNO\" = \"t2\".\"DEPTNO\") ON "
+        + "\"t\".\"HISAL\" = \"t0\".\"COMM\"\n"
         + "GROUP BY \"t0\".\"DEPTNO\", \"t2\".\"DNAME\") AS \"t4\"";
     CalciteAssert.model(JdbcTest.SCOTT_MODEL)
         .with(Lex.MYSQL)
