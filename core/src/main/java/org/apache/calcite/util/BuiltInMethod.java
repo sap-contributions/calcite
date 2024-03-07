@@ -57,6 +57,7 @@ import org.apache.calcite.rel.metadata.BuiltInMetadata.AllPredicates;
 import org.apache.calcite.rel.metadata.BuiltInMetadata.Collation;
 import org.apache.calcite.rel.metadata.BuiltInMetadata.ColumnOrigin;
 import org.apache.calcite.rel.metadata.BuiltInMetadata.ColumnUniqueness;
+import org.apache.calcite.rel.metadata.BuiltInMetadata.FieldsTrimmable;
 import org.apache.calcite.rel.metadata.BuiltInMetadata.CumulativeCost;
 import org.apache.calcite.rel.metadata.BuiltInMetadata.DistinctRowCount;
 import org.apache.calcite.rel.metadata.BuiltInMetadata.Distribution;
@@ -799,6 +800,7 @@ public enum BuiltInMethod {
       "cumulativeMemoryWithinPhaseSplit"),
   COLUMN_UNIQUENESS(ColumnUniqueness.class, "areColumnsUnique",
       ImmutableBitSet.class, boolean.class),
+  FIELDS_TRIMMABLE(FieldsTrimmable.class, "areFieldsTrimmable"),
   COLLATIONS(Collation.class, "collations"),
   DISTRIBUTION(Distribution.class, "distribution"),
   NODE_TYPES(NodeTypes.class, "getNodeTypes"),

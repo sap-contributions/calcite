@@ -2440,7 +2440,7 @@ public class RelBuilder {
     final ImmutableBitSet groupSet2;
     final ImmutableList<ImmutableBitSet> groupSets2;
     if (config.pruneInputOfAggregate()
-        && r instanceof Project) {
+        && r instanceof Project && r.getCluster().getMetadataQuery().areFieldsTrimmable(r)) {
       final Set<Integer> fieldsUsed =
           RelOptUtil.getAllFields2(groupSet, aggregateCalls);
       // Some parts of the system can't handle rows with zero fields, so
