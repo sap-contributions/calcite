@@ -53,10 +53,12 @@ import org.apache.calcite.linq4j.tree.FunctionExpression;
 import org.apache.calcite.linq4j.tree.Primitive;
 import org.apache.calcite.linq4j.tree.Types;
 import org.apache.calcite.plan.volcano.VolcanoPlanner;
+import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.metadata.BuiltInMetadata.AllPredicates;
 import org.apache.calcite.rel.metadata.BuiltInMetadata.Collation;
 import org.apache.calcite.rel.metadata.BuiltInMetadata.ColumnOrigin;
 import org.apache.calcite.rel.metadata.BuiltInMetadata.ColumnUniqueness;
+import org.apache.calcite.rel.metadata.BuiltInMetadata.FieldsTrimmable;
 import org.apache.calcite.rel.metadata.BuiltInMetadata.CumulativeCost;
 import org.apache.calcite.rel.metadata.BuiltInMetadata.DistinctRowCount;
 import org.apache.calcite.rel.metadata.BuiltInMetadata.Distribution;
@@ -813,6 +815,7 @@ public enum BuiltInMethod {
       "cumulativeMemoryWithinPhaseSplit"),
   COLUMN_UNIQUENESS(ColumnUniqueness.class, "areColumnsUnique",
       ImmutableBitSet.class, boolean.class),
+  FIELDS_TRIMMABLE(FieldsTrimmable.class, "areFieldsTrimmable", RelNode.class),
   COLLATIONS(Collation.class, "collations"),
   DISTRIBUTION(Distribution.class, "distribution"),
   NODE_TYPES(NodeTypes.class, "getNodeTypes"),

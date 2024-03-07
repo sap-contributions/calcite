@@ -196,36 +196,43 @@ public class RelFieldTrimmer implements ReflectiveVisitor {
       RelNode input,
       final ImmutableBitSet fieldsUsed,
       Set<RelDataTypeField> extraFields) {
-    final ImmutableBitSet.Builder fieldsUsedBuilder = fieldsUsed.rebuild();
 
-    // Fields that define the collation cannot be discarded.
-    final RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
-    final ImmutableList<RelCollation> collations = mq.collations(input);
-    if (collations != null) {
-      for (RelCollation collation : collations) {
-        for (RelFieldCollation fieldCollation : collation.getFieldCollations()) {
-          fieldsUsedBuilder.set(fieldCollation.getFieldIndex());
+    ImmutableBitSet childFieldsUsed;
+    final RelMetadataQuery mq = input.getCluster().getMetadataQuery();
+    if ( !mq.areFieldsTrimmable(input, rel)) {
+      childFieldsUsed = ImmutableBitSet.range(input.getRowType().getFieldCount());
+    } else {
+      final ImmutableBitSet.Builder fieldsUsedBuilder = fieldsUsed.rebuild();
+
+      // Fields that define the collation cannot be discarded.
+      final ImmutableList<RelCollation> collations = mq.collations(input);
+      if (collations != null) {
+        for (RelCollation collation : collations) {
+          for (RelFieldCollation fieldCollation : collation.getFieldCollations()) {
+            fieldsUsedBuilder.set(fieldCollation.getFieldIndex());
+          }
         }
       }
-    }
 
-    // Correlating variables are a means for other relational expressions to use
-    // fields.
-    for (final CorrelationId correlation : rel.getVariablesSet()) {
-      rel.accept(
-          new CorrelationReferenceFinder() {
-            @Override protected RexNode handle(RexFieldAccess fieldAccess) {
-              final RexCorrelVariable v =
-                  (RexCorrelVariable) fieldAccess.getReferenceExpr();
-              if (v.id.equals(correlation)) {
-                fieldsUsedBuilder.set(fieldAccess.getField().getIndex());
+      // Correlating variables are a means for other relational expressions to use
+      // fields.
+      for (final CorrelationId correlation : rel.getVariablesSet()) {
+        rel.accept(
+            new CorrelationReferenceFinder() {
+              @Override
+              protected RexNode handle(RexFieldAccess fieldAccess) {
+                final RexCorrelVariable v =
+                    (RexCorrelVariable) fieldAccess.getReferenceExpr();
+                if (v.id.equals(correlation)) {
+                  fieldsUsedBuilder.set(fieldAccess.getField().getIndex());
+                }
+                return fieldAccess;
               }
-              return fieldAccess;
-            }
-          });
+            });
+      }
+      childFieldsUsed = fieldsUsedBuilder.build();
     }
-
-    return dispatchTrimFields(input, fieldsUsedBuilder.build(), extraFields);
+    return dispatchTrimFields(input, childFieldsUsed, extraFields);
   }
 
   /**
