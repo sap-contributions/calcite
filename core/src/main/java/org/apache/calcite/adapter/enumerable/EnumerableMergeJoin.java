@@ -500,8 +500,12 @@ public class EnumerableMergeJoin extends Join implements EnumerableRel {
             Expressions.call(
                 BuiltInMethod.MERGE_JOIN.method,
                 Expressions.list(
-                    leftExpression,
-                    rightExpression,
+                    Expressions.call(BuiltInMethod.MERGE_JOIN_NOT_NULL_ENUMBERABLE.method, leftExpression,
+                        Expressions.lambda(
+                            leftKeyPhysType.record(leftExpressions), left_)),
+                    Expressions.call(BuiltInMethod.MERGE_JOIN_NOT_NULL_ENUMBERABLE.method, rightExpression,
+                        Expressions.lambda(
+                          rightKeyPhysType.record(rightExpressions), right_)),
                     Expressions.lambda(
                         leftKeyPhysType.record(leftExpressions), left_),
                     Expressions.lambda(
