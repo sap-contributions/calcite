@@ -68,7 +68,7 @@ public class JdbcImplementor extends RelToSqlConverter {
     // We need to provide a context which also includes the correlation variables
     // as dynamic parameters.
     return new Context(dialect, fieldList.size()) {
-      @Override public SqlNode field(int ordinal) {
+      @Override public SqlNode field(int ordinal, Clause clause) {
         RelDataTypeField field = fieldList.get(ordinal);
         return new SqlDynamicParam(
             dataContextBuilder.add(variable.id, ordinal,
