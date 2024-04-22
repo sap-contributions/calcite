@@ -37,25 +37,7 @@ import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.rel.type.RelDataTypeSystemImpl;
-import org.apache.calcite.rex.RexBuilder;
-import org.apache.calcite.rex.RexCall;
-import org.apache.calcite.rex.RexCorrelVariable;
-import org.apache.calcite.rex.RexDynamicParam;
-import org.apache.calcite.rex.RexFieldAccess;
-import org.apache.calcite.rex.RexFieldCollation;
-import org.apache.calcite.rex.RexInputRef;
-import org.apache.calcite.rex.RexLiteral;
-import org.apache.calcite.rex.RexLocalRef;
-import org.apache.calcite.rex.RexNode;
-import org.apache.calcite.rex.RexOver;
-import org.apache.calcite.rex.RexPatternFieldRef;
-import org.apache.calcite.rex.RexProgram;
-import org.apache.calcite.rex.RexShuttle;
-import org.apache.calcite.rex.RexSubQuery;
-import org.apache.calcite.rex.RexUnknownAs;
-import org.apache.calcite.rex.RexUtil;
-import org.apache.calcite.rex.RexWindow;
-import org.apache.calcite.rex.RexWindowBound;
+import org.apache.calcite.rex.*;
 import org.apache.calcite.sql.JoinType;
 import org.apache.calcite.sql.SqlAggFunction;
 import org.apache.calcite.sql.SqlBasicCall;
@@ -1913,6 +1895,17 @@ public abstract class SqlImplementor {
           return true;
         }
 
+        if ( agg.getInput() instanceof Project) {
+          final Project project = (Project) agg.getInput();
+          boolean hasDynamicParamInGroupBy = false;
+          final DynamicParamVisitor finder = new DynamicParamVisitor();
+          for ( int group: agg.getGroupSet()) {
+            hasDynamicParamInGroupBy = hasDynamicParamInGroupBy || project.getProjects().get(group).accept(finder);
+          }
+          if ( hasDynamicParamInGroupBy) {
+            return true;
+          }
+        }
         if (clauses.contains(Clause.GROUP_BY)) {
           // Avoid losing the distinct attribute of inner aggregate.
           return !hasNestedAgg || Aggregate.isNotGrandTotal(agg);
@@ -2153,6 +2146,56 @@ public abstract class SqlImplementor {
           ? this
           : new Result(node, clauses, neededAlias, neededType, aliases, anon,
               ignoreClauses, ImmutableSet.copyOf(expectedClauses), expectedRel);
+    }
+
+    private class DynamicParamVisitor implements RexVisitor<Boolean> {
+      public DynamicParamVisitor() {
+      }
+
+      @Override
+      public Boolean visitInputRef(RexInputRef inputRef) {
+        return false;
+      }
+      @Override
+      public Boolean visitLocalRef(RexLocalRef localRef) {
+        return false;
+      }
+      @Override
+      public Boolean visitLiteral(RexLiteral literal) {
+        return false;
+      }
+      @Override
+      public Boolean visitCorrelVariable(RexCorrelVariable correlVariable) {
+        return false;
+      }
+      @Override public Boolean visitDynamicParam(RexDynamicParam dynamicParam) {
+        return true;
+      }
+      @Override public Boolean visitOver(RexOver over){
+        return false;
+      }
+      @Override public Boolean visitCall(RexCall call) {
+        for (RexNode operand : call.operands) {
+          if (operand.accept(this)) return true;
+        }
+        return false;
+      }
+      @Override public Boolean visitRangeRef(RexRangeRef rangeRef){
+        return false;
+      }
+      @Override public Boolean visitFieldAccess(RexFieldAccess fieldAccess){
+        return false;
+      }
+      @Override public Boolean visitSubQuery(RexSubQuery subQuery){
+        return false;
+      }
+      @Override public Boolean visitTableInputRef(RexTableInputRef fieldRef){
+        return false;
+      }
+      @Override public Boolean visitPatternFieldRef(RexPatternFieldRef fieldRef){
+        return false;
+      }
+
     }
   }
 

@@ -3168,6 +3168,22 @@ public class JdbcTest {
         .returns("c0=1997; m0=85452\n");
   }
 
+  @Test void testDistinctWithDynamicParam() {
+    String statement = "SELECT\n" +
+        "  DISTINCT \"alias\"\n" +
+        "FROM (\n" +
+        "   SELECT \"ENAME\" || CAST(? AS VARCHAR) \"alias\"\n" +
+        "   FROM \"EMP\")";
+
+    CalciteAssert.model(JdbcTest.SCOTT_MODEL)
+        .query(statement)
+        .consumesPreparedStatement(p -> {
+          p.setString(1, "name");
+        })
+        .planHasSql("SELECT \"alias\"\nFROM (SELECT \"ENAME\" || ? AS \"alias\"\nFROM \"SCOTT\".\"EMP\") AS \"t\"\nGROUP BY \"alias\"")
+        .runs();
+  }
+
   @Test void testAggregateFilter() {
     final String s = "select \"the_month\",\n"
         + " count(*) as \"c\",\n"
