@@ -44,6 +44,8 @@ import com.google.common.collect.ImmutableList;
 
 import org.apache.calcite.sql.validate.SqlConformance;
 
+import org.apache.calcite.sql.validate.SqlConformance;
+
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.List;
