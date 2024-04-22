@@ -595,7 +595,7 @@ public class RelToSqlConverter extends SqlImplementor
   protected void buildAggGroupList(Aggregate e, Builder builder,
       List<SqlNode> groupByList, List<SqlNode> selectList) {
     for (int group : e.getGroupSet()) {
-      final SqlNode field = builder.context.field(group, Clause.GROUP_BY);
+      final SqlNode field = builder.context.field(group);
       addSelect(selectList, field, e.getRowType());
       groupByList.add(field);
     }
@@ -662,7 +662,7 @@ public class RelToSqlConverter extends SqlImplementor
 
     final List<SqlNode> groupKeys = new ArrayList<>();
     for (int key : groupList) {
-      final SqlNode field = builder.context.field(key, Clause.GROUP_BY);
+      final SqlNode field = builder.context.field(key);
       groupKeys.add(field);
     }
     for (int key : sortedGroupList) {
