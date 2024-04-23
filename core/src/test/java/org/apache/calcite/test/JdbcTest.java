@@ -3216,6 +3216,14 @@ public class JdbcTest {
         .runs();
   }
 
+  @Test void testFilterWithCastPushDown() {
+    CalciteAssert.that()
+        .with(CalciteAssert.Config.FOODMART_CLONE)
+        .query("SELECT * FROM \"foodmart\".\"sales_fact_1997\"" +
+            " WHERE cast(? as varchar(100)) = cast(? as varchar(100))")
+        .planHasSql("SELECT *\nFROM \"foodmart\".\"sales_fact_1997\"\nWHERE CAST(? AS VARCHAR(100)) = CAST(? AS VARCHAR(100))");
+  }
+
   @Test void testAggregateFilter() {
     final String s = "select \"the_month\",\n"
         + " count(*) as \"c\",\n"
