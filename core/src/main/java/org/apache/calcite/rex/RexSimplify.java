@@ -2185,7 +2185,7 @@ public class RexSimplify {
   private RexNode simplifyCast(RexCall e) {
     RexNode operand = e.getOperands().get(0);
     operand = simplify(operand, UNKNOWN);
-    if (sameTypeOrNarrowsNullability(e.getType(), operand.getType())) {
+    if (sameTypeOrNarrowsNullability(e.getType(), operand.getType()) && !(operand instanceof RexDynamicParam)) {
       return operand;
     }
     if (RexUtil.isLosslessCast(operand)) {
