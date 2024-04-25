@@ -113,6 +113,7 @@ public class RelFieldTrimmer implements ReflectiveVisitor {
 
   private final ReflectUtil.MethodDispatcher<TrimResult> trimFieldsDispatcher;
   private final RelBuilder relBuilder;
+  private boolean withinDistinctAggregation = false;
 
   //~ Constructors -----------------------------------------------------------
 
@@ -769,6 +770,22 @@ public class RelFieldTrimmer implements ReflectiveVisitor {
       Join join,
       ImmutableBitSet fieldsUsed,
       Set<RelDataTypeField> extraFields) {
+    if ( withinDistinctAggregation ) {
+      final int leftFieldCount = join.getLeft().getRowType().getFieldCount();
+      if (join.getJoinType() == JoinRelType.LEFT) {
+        if (fieldsUsed.allMatch(i -> i < leftFieldCount)) {
+          // only left side is required
+          TrimResult result =  trimChild(join, join.getLeft(), fieldsUsed, extraFields);
+          Mapping mapping = result.right;
+          Mapping mapping2 = Mappings.create(MappingType.INVERSE_SURJECTION,join.getRowType().getFieldCount(),mapping.getTargetCount());
+          for ( int i = 0 ; i < mapping.getTargetCount(); i++) {
+            mapping2.set(i,mapping.getTarget(i));
+          }
+          return new TrimResult(result.left,mapping2);
+        }
+      }
+    }
+
     final int fieldCount = join.getSystemFieldList().size()
         + join.getLeft().getRowType().getFieldCount()
         + join.getRight().getRowType().getFieldCount();
@@ -1017,6 +1034,7 @@ public class RelFieldTrimmer implements ReflectiveVisitor {
     // But group and indicator fields stay, even if they are not used.
 
     final RelDataType rowType = aggregate.getRowType();
+    boolean distinctAggregation = true;
 
     // Compute which input fields are used.
     // 1. group fields are always used
@@ -1031,14 +1049,20 @@ public class RelFieldTrimmer implements ReflectiveVisitor {
       if (aggCall.distinctKeys != null) {
         inputFieldsUsed.addAll(aggCall.distinctKeys);
       }
+      distinctAggregation = distinctAggregation && aggCall.isDistinct();
       inputFieldsUsed.addAll(RelCollations.ordinals(aggCall.collation));
     }
-
-    // Create input with trimmed columns.
+    final TrimResult trimResult;
     final RelNode input = aggregate.getInput();
-    final Set<RelDataTypeField> inputExtraFields = Collections.emptySet();
-    final TrimResult trimResult =
-        trimChild(aggregate, input, inputFieldsUsed.build(), inputExtraFields);
+    boolean savedDistinctAggregation = withinDistinctAggregation;
+    try {
+      withinDistinctAggregation = distinctAggregation;
+      // Create input with trimmed columns.
+      final Set<RelDataTypeField> inputExtraFields = Collections.emptySet();
+      trimResult = trimChild(aggregate, input, inputFieldsUsed.build(), inputExtraFields);
+    } finally {
+      withinDistinctAggregation = savedDistinctAggregation;
+    }
     final RelNode newInput = trimResult.left;
     final Mapping inputMapping = trimResult.right;
     // We have to return group keys and (if present) indicators.
