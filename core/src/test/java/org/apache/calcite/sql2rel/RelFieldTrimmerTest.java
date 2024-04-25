@@ -544,4 +544,27 @@ class RelFieldTrimmerTest {
         + "        LogicalTableScan(table=[[scott, EMP]])\n";
     assertThat(trimmed, hasTree(expected));
   }
+
+  @Test void testJoinRemovalDistinct() {
+      final RelBuilder builder = RelBuilder.create(config().build());
+      final RelNode root =
+        builder.scan("EMP").as("t1")
+            .scan("EMP").as("t2")
+            .join(JoinRelType.LEFT,
+                builder.equals(
+                    builder.field(2, "t1", "EMPNO"),
+                    builder.field(2, "t2", "EMPNO")))
+            .aggregate(
+              builder.groupKey(builder.field("EMPNO")),
+              builder.count(true, "t3", builder.field("EMPNO")))
+          .build();
+
+      final RelFieldTrimmer fieldTrimmer = new RelFieldTrimmer(null, builder);
+      final RelNode trimmed = fieldTrimmer.trim(root);
+      final String expected = ""
+          + "LogicalAggregate(group=[{0}], t3=[COUNT(DISTINCT $0)])\n"
+          + "  LogicalProject(EMPNO=[$0])\n"
+          + "    LogicalTableScan(table=[[scott, EMP]])\n";
+      assertThat(trimmed, hasTree(expected));
+  }
 }
