@@ -1989,9 +1989,6 @@ public abstract class EnumerableDefaults {
       final Predicate2<TSource, TInner> predicate,
       Function2<? super @Nullable TSource, ? super @Nullable TInner, TResult> resultSelector,
       final JoinType joinType) {
-    if (!joinType.generatesNullsOnLeft()) {
-      return nestedLoopJoinOptimized(outer, inner, predicate, resultSelector, joinType);
-    }
     return nestedLoopJoinAsList(outer, inner, predicate, resultSelector, joinType);
   }
 
