@@ -349,19 +349,19 @@ public class JdbcRules {
     private static boolean canJoinOnCondition(RexNode node) {
       final List<RexNode> operands;
       switch (node.getKind()) {
+      case NOT:
+      case IS_NULL:
+      case IS_NOT_NULL:
+      case IS_FALSE:
+      case IS_NOT_FALSE:
+      case IS_TRUE:
+      case IS_NOT_TRUE:
+      case INPUT_REF:
       case LITERAL:
         // literal on a join condition would be TRUE or FALSE
         return true;
       case AND:
       case OR:
-        operands = ((RexCall) node).getOperands();
-        for (RexNode operand : operands) {
-          if (!canJoinOnCondition(operand)) {
-            return false;
-          }
-        }
-        return true;
-
       case EQUALS:
       case IS_NOT_DISTINCT_FROM:
       case NOT_EQUALS:
@@ -370,12 +370,12 @@ public class JdbcRules {
       case LESS_THAN:
       case LESS_THAN_OR_EQUAL:
         operands = ((RexCall) node).getOperands();
-        if ((operands.get(0) instanceof RexInputRef)
-            && (operands.get(1) instanceof RexInputRef)) {
-          return true;
+        for (RexNode operand : operands) {
+          if (!canJoinOnCondition(operand)) {
+            return false;
+          }
         }
-        // fall through
-
+        return true;
       default:
         return false;
       }
