@@ -369,6 +369,7 @@ public class JdbcRules {
       case GREATER_THAN_OR_EQUAL:
       case LESS_THAN:
       case LESS_THAN_OR_EQUAL:
+      case SEARCH:
         operands = ((RexCall) node).getOperands();
         for (RexNode operand : operands) {
           if (!canJoinOnCondition(operand)) {
