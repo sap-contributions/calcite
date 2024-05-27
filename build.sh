@@ -16,7 +16,7 @@
 # limitations under the License.
 #
 set -e
-VERSION=1.36.0
+VERSION=1.37.0
 
 ./gradlew clean publishToMavenLocal
 
@@ -37,6 +37,6 @@ do
       -Dpackaging=jar \
       -DlocalRepositoryPath=$HOME/.m2/repository
    cat ${module}/build/publications/${module}/pom-default.xml | \
-   sed -e 's/calcite-${module}/calcite-${module}-sap/g' -e "s/${VERSION}-SNAPSHOT/${VERSION}/g" > \
+   sed -e "s/calcite-${module}/calcite-${module}-sap/g" -e "s/${VERSION}-SNAPSHOT/${VERSION}/g" > \
    ../nucleus-resources-app/patches/org/apache/calcite/calcite-${module}-sap/$VERSION/calcite-${module}-sap-$VERSION.pom
 done
