@@ -798,8 +798,8 @@ public class RelFieldTrimmer implements ReflectiveVisitor {
           TrimResult result =  trimChild(join, join.getLeft(), fieldsUsed, extraFields);
           Mapping mapping = result.right;
           Mapping mapping2 = Mappings.create(MappingType.INVERSE_SURJECTION,join.getRowType().getFieldCount(),mapping.getTargetCount());
-          for ( int i = 0 ; i < mapping.getTargetCount(); i++) {
-            mapping2.set(i,mapping.getTarget(i));
+          for ( IntPair map : mapping) {
+            mapping2.set(map.source,map.target);
           }
           return new TrimResult(result.left,mapping2);
         }
