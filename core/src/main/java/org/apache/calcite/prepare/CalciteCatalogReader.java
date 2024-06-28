@@ -27,6 +27,7 @@ import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rel.type.RelDataTypeFactoryImpl;
 import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.schema.AggregateFunction;
+import org.apache.calcite.schema.LikePattern;
 import org.apache.calcite.schema.ScalarFunction;
 import org.apache.calcite.schema.Table;
 import org.apache.calcite.schema.TableFunction;
@@ -205,7 +206,7 @@ public class CalciteCatalogReader implements Prepare.CatalogReader {
       result.add(moniker(schema, subSchema, SqlMonikerType.SCHEMA));
     }
 
-    for (String table : schema.getTableNames()) {
+    for (String table : schema.getTableNames(LikePattern.any())) {
       result.add(moniker(schema, table, SqlMonikerType.TABLE));
     }
 

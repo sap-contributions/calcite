@@ -18,6 +18,8 @@ package org.apache.calcite.jdbc;
 
 import org.apache.calcite.rel.type.RelProtoDataType;
 import org.apache.calcite.schema.Function;
+import org.apache.calcite.schema.Lookup;
+import org.apache.calcite.schema.Named;
 import org.apache.calcite.schema.Schema;
 import org.apache.calcite.schema.SchemaVersion;
 import org.apache.calcite.schema.Table;
@@ -118,18 +120,11 @@ class SimpleCalciteSchema extends CalciteSchema {
 
   @Override protected @Nullable TableEntry getImplicitTable(String tableName,
       boolean caseSensitive) {
-    // Check implicit tables.
-    final String tableName2 =
-        caseSensitive ? tableName
-            : caseInsensitiveLookup(schema.getTableNames(), tableName);
-    if (tableName2 == null) {
-      return null;
-    }
-    final Table table = schema.getTable(tableName2);
+    final Named<Table> table = Lookup.get(schema.tables(),tableName, caseSensitive);
     if (table == null) {
       return null;
     }
-    return tableEntry(tableName2, table);
+    return tableEntry(table.name(), table.table());
   }
 
   @Override protected @Nullable TypeEntry getImplicitType(String name, boolean caseSensitive) {
@@ -161,10 +156,6 @@ class SimpleCalciteSchema extends CalciteSchema {
         builder.put(schemaName, calciteSchema);
       }
     }
-  }
-
-  @Override protected void addImplicitTableToBuilder(ImmutableSortedSet.Builder<String> builder) {
-    builder.addAll(schema.getTableNames());
   }
 
   @Override protected void addImplicitFunctionsToBuilder(

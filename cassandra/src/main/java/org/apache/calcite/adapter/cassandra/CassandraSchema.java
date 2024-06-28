@@ -25,6 +25,7 @@ import org.apache.calcite.rel.type.RelDataTypeImpl;
 import org.apache.calcite.rel.type.RelDataTypeSystem;
 import org.apache.calcite.rel.type.RelProtoDataType;
 import org.apache.calcite.runtime.Hook;
+import org.apache.calcite.schema.LikePattern;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.schema.Table;
 import org.apache.calcite.schema.impl.AbstractSchema;
@@ -325,7 +326,7 @@ public class CassandraSchema extends AbstractSchema {
       query = buf.toString();
 
       // Add the view for this query
-      String viewName = "$" + getTableNames().size();
+      String viewName = "$" + tables().getNames(LikePattern.any()).size();
       SchemaPlus schema = parentSchema.getSubSchema(name);
       if (schema == null) {
         throw new IllegalStateException("Cannot find schema " + name

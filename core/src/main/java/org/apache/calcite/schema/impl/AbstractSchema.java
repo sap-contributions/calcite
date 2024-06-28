@@ -16,15 +16,10 @@
  */
 package org.apache.calcite.schema.impl;
 
+import org.apache.calcite.linq4j.function.Predicate1;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.rel.type.RelProtoDataType;
-import org.apache.calcite.schema.Function;
-import org.apache.calcite.schema.Schema;
-import org.apache.calcite.schema.SchemaFactory;
-import org.apache.calcite.schema.SchemaPlus;
-import org.apache.calcite.schema.SchemaVersion;
-import org.apache.calcite.schema.Schemas;
-import org.apache.calcite.schema.Table;
+import org.apache.calcite.schema.*;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMultimap;
@@ -35,6 +30,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import static java.util.Objects.requireNonNull;
 
@@ -56,7 +52,14 @@ import static java.util.Objects.requireNonNull;
  * </ul>
  */
 public class AbstractSchema implements Schema {
+
+  private Lookup<Table> tables = new SimpleTableLookup(this);
+
   public AbstractSchema() {
+  }
+
+  @Override public Lookup<Table> tables() {
+    return tables;
   }
 
   @Override public boolean isMutable() {
@@ -86,12 +89,12 @@ public class AbstractSchema implements Schema {
     return ImmutableMap.of();
   }
 
-  @Override public final Set<String> getTableNames() {
+  @Deprecated @Override public final Set<String> getTableNames() {
     //noinspection RedundantCast
     return (Set<String>) getTableMap().keySet();
   }
 
-  @Override public final @Nullable Table getTable(String name) {
+  @Deprecated @Override public final @Nullable Table getTable(String name) {
     return getTableMap().get(name);
   }
 

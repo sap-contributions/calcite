@@ -23,16 +23,7 @@ import org.apache.calcite.jdbc.CalciteSchema;
 import org.apache.calcite.materialize.Lattice;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
-import org.apache.calcite.schema.AggregateFunction;
-import org.apache.calcite.schema.Function;
-import org.apache.calcite.schema.ScalarFunction;
-import org.apache.calcite.schema.Schema;
-import org.apache.calcite.schema.SchemaFactory;
-import org.apache.calcite.schema.SchemaPlus;
-import org.apache.calcite.schema.Table;
-import org.apache.calcite.schema.TableFactory;
-import org.apache.calcite.schema.TableFunction;
-import org.apache.calcite.schema.TableMacro;
+import org.apache.calcite.schema.*;
 import org.apache.calcite.schema.impl.AbstractSchema;
 import org.apache.calcite.schema.impl.AggregateFunctionImpl;
 import org.apache.calcite.schema.impl.MaterializedViewTable;
@@ -361,7 +352,7 @@ public class ModelHandler {
       if (jsonMaterialization.view == null) {
         // If the user did not supply a view name, that means the materialized
         // view is pre-populated. Generate a synthetic view name.
-        viewName = "$" + schema.getTableNames().size();
+        viewName = "$" + schema.tables().getNames(LikePattern.any()).size();
         existing = true;
       } else {
         viewName = jsonMaterialization.view;

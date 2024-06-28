@@ -561,7 +561,7 @@ public class ServerDdlExecutor extends DdlExecutorImpl {
             return super.newColumnDefaultValue(table, iColumn, context);
           }
         };
-    if (pair.left.plus().getTable(pair.right) != null) {
+    if (pair.left.plus().tables().get(pair.right) != null) {
       // Table exists.
       if (create.ifNotExists) {
         return;

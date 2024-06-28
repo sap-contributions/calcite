@@ -18,6 +18,12 @@
 set -e
 VERSION=1.37.0
 
+# Java 21 doesn't suppport Java 8
+if [ -d /Library/Java/JavaVirtualMachines/sapmachine-jdk-17.0.11.jdk/Contents/Home ]; then
+  export JAVA_HOME=/Library/Java/JavaVirtualMachines/sapmachine-jdk-17.0.11.jdk/Contents/Home
+  export PATH=$JAVA_HOME/bin:$PATH
+fi
+
 ./gradlew clean publishToMavenLocal
 
 for module in core linq4j;
