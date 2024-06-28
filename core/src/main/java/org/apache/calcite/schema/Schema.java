@@ -19,6 +19,8 @@ package org.apache.calcite.schema;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.rel.type.RelProtoDataType;
 
+import org.apache.calcite.schema.impl.SimpleTableLookup;
+
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.Collection;
@@ -56,19 +58,35 @@ import java.util.Set;
  * {@link Schema#getSubSchema(String)}.
  */
 public interface Schema {
+
+  /**
+   * Returns a lookup object to find tables
+   *
+   * @return Lookup
+   */
+  default Lookup<Table> tables() {
+    return new SimpleTableLookup(this);
+  }
   /**
    * Returns a table with a given name, or null if not found.
+   *
+   * @deprecated
+   * Please use {@link Schema#tables()} and {@link Lookup#get(String)} instead.
    *
    * @param name Table name
    * @return Table, or null
    */
-  @Nullable Table getTable(String name);
+  @Deprecated
+  @Nullable  Table getTable(String name) ;
 
   /**
    * Returns the names of the tables in this schema.
    *
+   * @deprecated
+   * Please use {@link Schema#tables()} and {@link Lookup#getNames(LikePattern)} instead.
    * @return Names of the tables in this schema
    */
+  @Deprecated
   Set<String> getTableNames();
 
   /**

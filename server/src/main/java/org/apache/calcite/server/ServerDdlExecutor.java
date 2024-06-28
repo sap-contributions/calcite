@@ -320,7 +320,7 @@ public class ServerDdlExecutor extends DdlExecutorImpl {
     case DROP_TABLE:
     case DROP_MATERIALIZED_VIEW:
       Table materializedView = schemaExists && drop.getKind() == SqlKind.DROP_MATERIALIZED_VIEW
-          ? schema.plus().getTable(objectName) : null;
+          ? schema.plus().tables().get(objectName) : null;
 
       existed = schemaExists && schema.removeTable(objectName);
       if (existed) {
@@ -370,7 +370,7 @@ public class ServerDdlExecutor extends DdlExecutorImpl {
   public void execute(SqlTruncateTable truncate,
       CalcitePrepare.Context context) {
     final Pair<CalciteSchema, String> pair = schema(context, true, truncate.name);
-    if (pair.left.plus().getTable(pair.right) == null) {
+    if (pair.left.plus().tables().get(pair.right) == null) {
       throw SqlUtil.newContextException(truncate.name.getParserPosition(),
           RESOURCE.tableNotFound(pair.right));
     }
@@ -387,7 +387,7 @@ public class ServerDdlExecutor extends DdlExecutorImpl {
   public void execute(SqlCreateMaterializedView create,
       CalcitePrepare.Context context) {
     final Pair<CalciteSchema, String> pair = schema(context, true, create.name);
-    if (pair.left.plus().getTable(pair.right) != null) {
+    if (pair.left.plus().tables().get(pair.right) != null) {
       // Materialized view exists.
       if (!create.ifNotExists) {
         // They did not specify IF NOT EXISTS, so give error.
@@ -541,7 +541,7 @@ public class ServerDdlExecutor extends DdlExecutorImpl {
             return super.newColumnDefaultValue(table, iColumn, context);
           }
         };
-    if (pair.left.plus().getTable(pair.right) != null) {
+    if (pair.left.plus().tables().get(pair.right) != null) {
       // Table exists.
       if (create.ifNotExists) {
         return;
@@ -566,7 +566,7 @@ public class ServerDdlExecutor extends DdlExecutorImpl {
   public void execute(SqlCreateTableLike create,
       CalcitePrepare.Context context) {
     final Pair<CalciteSchema, String> pair = schema(context, true, create.name);
-    if (pair.left.plus().getTable(pair.right) != null) {
+    if (pair.left.plus().tables().get(pair.right) != null) {
       // Table exists.
       if (create.ifNotExists) {
         return;

@@ -18,6 +18,8 @@ package org.apache.calcite.jdbc;
 
 import org.apache.calcite.rel.type.RelProtoDataType;
 import org.apache.calcite.schema.Function;
+import org.apache.calcite.schema.Lookup;
+import org.apache.calcite.schema.Named;
 import org.apache.calcite.schema.Schema;
 import org.apache.calcite.schema.SchemaVersion;
 import org.apache.calcite.schema.Table;
@@ -47,7 +49,6 @@ import static org.apache.calcite.linq4j.Nullness.castNonNull;
  */
 class CachingCalciteSchema extends CalciteSchema {
   private final Cached<SubSchemaCache> implicitSubSchemaCache;
-  private final Cached<NameSet> implicitTableCache;
   private final Cached<NameSet> implicitFunctionCache;
   private final Cached<NameSet> implicitTypeCache;
 
@@ -79,13 +80,6 @@ class CachingCalciteSchema extends CalciteSchema {
                 CachingCalciteSchema.this.schema.getSubSchemaNames());
           }
         };
-    this.implicitTableCache =
-        new AbstractCached<NameSet>() {
-          @Override public NameSet build() {
-            return NameSet.immutableCopyOf(
-                CachingCalciteSchema.this.schema.getTableNames());
-          }
-        };
     this.implicitFunctionCache =
         new AbstractCached<NameSet>() {
           @Override public NameSet build() {
@@ -108,7 +102,6 @@ class CachingCalciteSchema extends CalciteSchema {
     }
     final long now = System.currentTimeMillis();
     implicitSubSchemaCache.enable(now, cache);
-    implicitTableCache.enable(now, cache);
     implicitFunctionCache.enable(now, cache);
     this.cache = cache;
   }
@@ -138,14 +131,9 @@ class CachingCalciteSchema extends CalciteSchema {
 
   @Override protected @Nullable TableEntry getImplicitTable(String tableName,
       boolean caseSensitive) {
-    final long now = System.currentTimeMillis();
-    final NameSet implicitTableNames = implicitTableCache.get(now);
-    for (String tableName2
-        : implicitTableNames.range(tableName, caseSensitive)) {
-      final Table table = schema.getTable(tableName2);
-      if (table != null) {
-        return tableEntry(tableName2, table);
-      }
+    final Named<Table> entry = Lookup.get(schema.tables(),tableName, caseSensitive);
+    if (entry != null) {
+      return tableEntry(entry.name(),entry.table());
     }
     return null;
   }
@@ -177,14 +165,6 @@ class CachingCalciteSchema extends CalciteSchema {
       }
       builder.put(name, subSchemaCache.cache.getUnchecked(name));
     }
-  }
-
-  @Override protected void addImplicitTableToBuilder(
-      ImmutableSortedSet.Builder<String> builder) {
-    // Add implicit tables, case-sensitive.
-    final long now = System.currentTimeMillis();
-    final NameSet set = implicitTableCache.get(now);
-    builder.addAll(set.iterable());
   }
 
   @Override protected void addImplicitFunctionsToBuilder(
@@ -266,15 +246,6 @@ class CachingCalciteSchema extends CalciteSchema {
       snapshot.subSchemaMap.put(subSchema.name, subSchemaSnapshot);
     }
     return snapshot;
-  }
-
-  @Override public boolean removeTable(String name) {
-    if (cache) {
-      final long now = System.nanoTime();
-      implicitTableCache.enable(now, false);
-      implicitTableCache.enable(now, true);
-    }
-    return super.removeTable(name);
   }
 
   @Override public boolean removeFunction(String name) {

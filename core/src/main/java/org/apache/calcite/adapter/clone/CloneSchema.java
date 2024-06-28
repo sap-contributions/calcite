@@ -26,6 +26,8 @@ import org.apache.calcite.linq4j.Queryable;
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.type.RelProtoDataType;
+import org.apache.calcite.schema.LikePattern;
+import org.apache.calcite.schema.Lookup;
 import org.apache.calcite.schema.QueryableTable;
 import org.apache.calcite.schema.Schema;
 import org.apache.calcite.schema.SchemaFactory;
@@ -68,8 +70,9 @@ public class CloneSchema extends AbstractSchema {
 
   @Override protected Map<String, Table> getTableMap() {
     final Map<String, Table> map = new LinkedHashMap<>();
-    for (String name : sourceSchema.getTableNames()) {
-      final Table table = sourceSchema.getTable(name);
+    final Lookup<Table> tables = sourceSchema.tables();
+    for (String name : tables.getNames(LikePattern.any())) {
+      final Table table = tables.get(name);
       if (table instanceof QueryableTable) {
         final QueryableTable sourceTable = (QueryableTable) table;
         map.put(name,
