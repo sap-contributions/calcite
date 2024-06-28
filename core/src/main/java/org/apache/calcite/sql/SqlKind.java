@@ -1417,6 +1417,7 @@ public enum SqlKind {
    *
    * <p>Consists of:
    * {@link #IN},
+   * {@link #NOT_IN},
    * {@link #EQUALS},
    * {@link #NOT_EQUALS},
    * {@link #LESS_THAN},
@@ -1426,7 +1427,7 @@ public enum SqlKind {
    */
   public static final Set<SqlKind> COMPARISON =
       EnumSet.of(
-          IN, EQUALS, NOT_EQUALS,
+          IN, NOT_IN, EQUALS, NOT_EQUALS,
           LESS_THAN, GREATER_THAN,
           GREATER_THAN_OR_EQUAL, LESS_THAN_OR_EQUAL);
 
