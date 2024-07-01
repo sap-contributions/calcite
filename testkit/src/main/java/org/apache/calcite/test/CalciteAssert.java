@@ -988,7 +988,7 @@ public class CalciteAssert {
       // They redirect requests for SqlDialect and DataSource to the real JDBC
       // FOODMART, and this allows statistics queries to be executed.
       foodmart = addSchemaIfNotExists(rootSchema, SchemaSpec.JDBC_FOODMART);
-      final Wrapper salesTable = (Wrapper) foodmart.getTable("sales_fact_1997");
+      final Wrapper salesTable = (Wrapper) foodmart.tables().get("sales_fact_1997");
       SchemaPlus fake =
           rootSchema.add(schema.schemaName, new AbstractSchema());
       fake.add("time_by_day", new AbstractTable() {
@@ -2231,11 +2231,11 @@ public class CalciteAssert {
       }
     };
 
-    @Override public Table getTable(String name) {
+    @Deprecated @Override public Table getTable(String name) {
       return table;
     }
 
-    @Override public Set<String> getTableNames() {
+    @Deprecated @Override public Set<String> getTableNames() {
       return ImmutableSet.of("myTable");
     }
 

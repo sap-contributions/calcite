@@ -35,6 +35,7 @@ import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.rel.type.RelProtoDataType;
 import org.apache.calcite.rel.type.RelRecordType;
 import org.apache.calcite.schema.ColumnStrategy;
+import org.apache.calcite.schema.Lookup;
 import org.apache.calcite.schema.ModifiableTable;
 import org.apache.calcite.schema.Path;
 import org.apache.calcite.schema.ScannableTable;
@@ -505,11 +506,15 @@ public class RelOptTableImpl extends Prepare.AbstractPreparingTable {
       return false;
     }
 
-    @Override public @Nullable Table getTable(String name) {
+    @Override public @Nullable Lookup<Table> tables() {
+      return schema.tables();
+    }
+
+    @Deprecated @Override public @Nullable Table getTable(String name) {
       return schema.getTable(name);
     }
 
-    @Override public Set<String> getTableNames() {
+    @Deprecated @Override public Set<String> getTableNames() {
       return schema.getTableNames();
     }
 

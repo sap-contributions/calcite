@@ -259,7 +259,7 @@ public final class Schemas {
   public static <E> Queryable<E> queryable(DataContext root, SchemaPlus schema,
       Class<E> clazz, String tableName) {
     QueryableTable table =
-        (QueryableTable) requireNonNull(schema.getTable(tableName),
+        (QueryableTable) requireNonNull(schema.tables().get(tableName),
             () -> "table " + tableName + " is not found in " + schema);
     QueryProvider queryProvider = root.getQueryProvider();
     return table.asQueryable(queryProvider, schema, tableName);
@@ -314,7 +314,7 @@ public final class Schemas {
         }
         schema = next;
       } else {
-        return schema.getTable(name);
+        return schema.tables().get(name);
       }
     }
   }

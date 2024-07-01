@@ -17,16 +17,11 @@
 package org.apache.calcite.jdbc;
 
 import org.apache.calcite.linq4j.function.Experimental;
+import org.apache.calcite.linq4j.function.Predicate1;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.materialize.Lattice;
 import org.apache.calcite.rel.type.RelProtoDataType;
-import org.apache.calcite.schema.Function;
-import org.apache.calcite.schema.Schema;
-import org.apache.calcite.schema.SchemaPlus;
-import org.apache.calcite.schema.SchemaVersion;
-import org.apache.calcite.schema.Table;
-import org.apache.calcite.schema.TableMacro;
-import org.apache.calcite.schema.Wrapper;
+import org.apache.calcite.schema.*;
 import org.apache.calcite.schema.impl.MaterializedViewTable;
 import org.apache.calcite.schema.impl.StarTable;
 import org.apache.calcite.util.NameMap;
@@ -47,6 +42,8 @@ import java.util.Map;
 import java.util.NavigableMap;
 import java.util.NavigableSet;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
@@ -136,10 +133,6 @@ public abstract class CalciteSchema {
   /** Adds implicit sub-schemas to a builder. */
   protected abstract void addImplicitSubSchemaToBuilder(
       ImmutableSortedMap.Builder<String, CalciteSchema> builder);
-
-  /** Adds implicit tables to a builder. */
-  protected abstract void addImplicitTableToBuilder(
-      ImmutableSortedSet.Builder<String> builder);
 
   /** Adds implicit functions to a builder. */
   protected abstract void addImplicitFunctionsToBuilder(
@@ -335,14 +328,14 @@ public abstract class CalciteSchema {
 
   /** Returns the set of all table names. Includes implicit and explicit tables
    * and functions with zero parameters. */
-  public final NavigableSet<String> getTableNames() {
-    final ImmutableSortedSet.Builder<String> builder =
-        new ImmutableSortedSet.Builder<>(NameSet.COMPARATOR);
-    // Add explicit tables, case-sensitive.
-    builder.addAll(tableMap.map().keySet());
-    // Add implicit tables, case-sensitive.
-    addImplicitTableToBuilder(builder);
-    return builder.build();
+  public final Set<String> getTableNames(LikePattern pattern) {
+    Predicate1<String> predicate = pattern.matcher();
+    return Stream.concat(
+        tableMap.map().keySet()
+        .stream()
+        .filter(entry -> predicate.apply(entry)),
+        schema.tables().getNames(pattern).stream())
+        .collect(Collectors.toSet());
   }
 
   /** Returns the set of all types names. */
@@ -649,13 +642,34 @@ public abstract class CalciteSchema {
       return schema.getExpression(parentSchema, name);
     }
 
-    @Override public @Nullable Table getTable(String name) {
+    @Override public Lookup<Table> tables() {
+      return new Lookup<Table>() {
+        @Override
+        public @Nullable Table get(String name) {
+          final TableEntry entry = CalciteSchema.this.getTable(name,true);
+          return entry == null ? null : entry.getTable();
+        }
+
+        @Override
+        public @Nullable Named<Table> getIgnoreCase(String name) {
+          final TableEntry entry = CalciteSchema.this.getTable(name,false);
+          return entry == null ? null : new Named<>(entry.name, entry.getTable());
+        }
+
+        @Override
+        public Set<String> getNames(LikePattern pattern) {
+          return CalciteSchema.this.getTableNames(pattern);
+        }
+      };
+    }
+
+    @Deprecated @Override public @Nullable Table getTable(String name) {
       final TableEntry entry = CalciteSchema.this.getTable(name, true);
       return entry == null ? null : entry.getTable();
     }
 
-    @Override public NavigableSet<String> getTableNames() {
-      return CalciteSchema.this.getTableNames();
+    @Deprecated @Override public Set<String> getTableNames() {
+      return CalciteSchema.this.getTableNames(LikePattern.any());
     }
 
     @Override public @Nullable RelProtoDataType getType(String name) {
