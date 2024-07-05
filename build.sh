@@ -24,6 +24,11 @@ if [ -d /Library/Java/JavaVirtualMachines/sapmachine-jdk-17.0.11.jdk/Contents/Ho
   export PATH=$JAVA_HOME/bin:$PATH
 fi
 
+if [ -d /Library/Java/JavaVirtualMachines/sapmachine-17.jdk/Contents/Home ]; then
+  export JAVA_HOME=/Library/Java/JavaVirtualMachines/sapmachine-17.jdk/Contents/Home
+  export PATH=$JAVA_HOME/bin:$PATH
+fi
+
 ./gradlew clean publishToMavenLocal
 
 for module in core linq4j;
