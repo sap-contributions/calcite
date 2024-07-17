@@ -16,7 +16,6 @@
  */
 package org.apache.calcite.schema.impl;
 
-import org.apache.calcite.linq4j.function.Predicate1;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.rel.type.RelProtoDataType;
 import org.apache.calcite.schema.*;
@@ -25,12 +24,15 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.Multimap;
 
+import org.apache.calcite.schema.lookup.Lookup;
+
+import org.apache.calcite.schema.lookup.SimpleLookup;
+
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import static java.util.Objects.requireNonNull;
 
@@ -53,13 +55,17 @@ import static java.util.Objects.requireNonNull;
  */
 public class AbstractSchema implements Schema {
 
-  private Lookup<Table> tables = new SimpleTableLookup(this);
+  private Lookup<Table> tables = new SimpleLookup<Table>(this::getTable, this::getTableNames);
+  private Lookup<Schema> subSchemas = new SimpleLookup<Schema>(this::getSubSchema, this::getSubSchemaNames);
 
   public AbstractSchema() {
   }
 
   @Override public Lookup<Table> tables() {
     return tables;
+  }
+  @Override public Lookup<? extends Schema> subSchemas() {
+    return subSchemas;
   }
 
   @Override public boolean isMutable() {
@@ -160,12 +166,12 @@ public class AbstractSchema implements Schema {
     return ImmutableMap.of();
   }
 
-  @Override public final Set<String> getSubSchemaNames() {
+  @Deprecated @Override public final Set<String> getSubSchemaNames() {
     //noinspection RedundantCast
     return (Set<String>) getSubSchemaMap().keySet();
   }
 
-  @Override public final @Nullable Schema getSubSchema(String name) {
+  @Deprecated @Override public final @Nullable Schema getSubSchema(String name) {
     return getSubSchemaMap().get(name);
   }
 

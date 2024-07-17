@@ -19,8 +19,8 @@ package org.apache.calcite.schema.impl;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.rel.type.RelProtoDataType;
 import org.apache.calcite.schema.Function;
-import org.apache.calcite.schema.LikePattern;
-import org.apache.calcite.schema.Lookup;
+import org.apache.calcite.schema.lookup.LikePattern;
+import org.apache.calcite.schema.lookup.Lookup;
 import org.apache.calcite.schema.Schema;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.schema.SchemaVersion;
@@ -91,11 +91,15 @@ public class DelegatingSchema implements Schema {
     return schema.getFunctionNames();
   }
 
-  @Override public @Nullable Schema getSubSchema(String name) {
-    return schema.getSubSchema(name);
+  @Override public @Nullable Lookup<? extends Schema> subSchemas() {
+    return schema.subSchemas();
   }
 
-  @Override public Set<String> getSubSchemaNames() {
-    return schema.getSubSchemaNames();
+  @Deprecated @Override public @Nullable Schema getSubSchema(String name) {
+    return subSchemas().get(name);
+  }
+
+  @Deprecated @Override public Set<String> getSubSchemaNames() {
+    return subSchemas().getNames(LikePattern.any());
   }
 }

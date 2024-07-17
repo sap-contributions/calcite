@@ -34,20 +34,10 @@ import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.rel.type.RelProtoDataType;
 import org.apache.calcite.rel.type.RelRecordType;
-import org.apache.calcite.schema.ColumnStrategy;
-import org.apache.calcite.schema.Lookup;
-import org.apache.calcite.schema.ModifiableTable;
-import org.apache.calcite.schema.Path;
-import org.apache.calcite.schema.ScannableTable;
-import org.apache.calcite.schema.Schema;
-import org.apache.calcite.schema.SchemaPlus;
-import org.apache.calcite.schema.SchemaVersion;
-import org.apache.calcite.schema.Schemas;
-import org.apache.calcite.schema.StreamableTable;
-import org.apache.calcite.schema.Table;
-import org.apache.calcite.schema.TemporalTable;
-import org.apache.calcite.schema.TranslatableTable;
-import org.apache.calcite.schema.Wrapper;
+import org.apache.calcite.schema.*;
+import org.apache.calcite.schema.lookup.LikePattern;
+import org.apache.calcite.schema.lookup.Lookup;
+import org.apache.calcite.schema.lookup.Named;
 import org.apache.calcite.sql.SqlAccessType;
 import org.apache.calcite.sql.validate.SqlModality;
 import org.apache.calcite.sql.validate.SqlMonotonicity;
@@ -430,11 +420,14 @@ public class RelOptTableImpl extends Prepare.AbstractPreparingTable {
     private final @Nullable SchemaPlus parent;
     private final String name;
     private final Schema schema;
+    private final Lookup<? extends SchemaPlus> subSchemas;
+
 
     MySchemaPlus(@Nullable SchemaPlus parent, String name, Schema schema) {
       this.parent = parent;
       this.name = name;
       this.schema = schema;
+      this.subSchemas = schema.subSchemas().map((s,key) -> new MySchemaPlus(this, key, s));
     }
 
     public static MySchemaPlus create(Path path) {
@@ -456,9 +449,8 @@ public class RelOptTableImpl extends Prepare.AbstractPreparingTable {
       return name;
     }
 
-    @Override public @Nullable SchemaPlus getSubSchema(String name) {
-      final Schema subSchema = schema.getSubSchema(name);
-      return subSchema == null ? null : new MySchemaPlus(this, name, subSchema);
+    @Deprecated @Override public @Nullable SchemaPlus getSubSchema(String name) {
+      return subSchemas.get(name);
     }
 
     @Override public SchemaPlus add(String name, Schema schema) {
@@ -509,13 +501,16 @@ public class RelOptTableImpl extends Prepare.AbstractPreparingTable {
     @Override public @Nullable Lookup<Table> tables() {
       return schema.tables();
     }
+    @Override public @Nullable Lookup<? extends SchemaPlus> subSchemas() {
+      return subSchemas;
+    }
 
     @Deprecated @Override public @Nullable Table getTable(String name) {
       return schema.getTable(name);
     }
 
     @Deprecated @Override public Set<String> getTableNames() {
-      return schema.getTableNames();
+      return schema.tables().getNames(LikePattern.any());
     }
 
     @Override public @Nullable RelProtoDataType getType(String name) {
@@ -535,8 +530,8 @@ public class RelOptTableImpl extends Prepare.AbstractPreparingTable {
       return schema.getFunctionNames();
     }
 
-    @Override public Set<String> getSubSchemaNames() {
-      return schema.getSubSchemaNames();
+    @Deprecated @Override public Set<String> getSubSchemaNames() {
+      return schema.subSchemas().getNames(LikePattern.any());
     }
 
     @Override public Expression getExpression(@Nullable SchemaPlus parentSchema,

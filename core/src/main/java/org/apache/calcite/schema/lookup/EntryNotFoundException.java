@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.calcite.schema.impl;
+package org.apache.calcite.schema.lookup;
 
 /**
  * Exceptions used in caches to signal none existing entries

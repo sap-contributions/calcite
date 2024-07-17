@@ -27,7 +27,7 @@ import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rel.type.RelDataTypeFactoryImpl;
 import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.schema.AggregateFunction;
-import org.apache.calcite.schema.LikePattern;
+import org.apache.calcite.schema.lookup.LikePattern;
 import org.apache.calcite.schema.ScalarFunction;
 import org.apache.calcite.schema.Table;
 import org.apache.calcite.schema.TableFunction;

@@ -24,6 +24,7 @@ import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.rules.materialize.MaterializedViewRules;
 import org.apache.calcite.runtime.Hook;
+import org.apache.calcite.schema.lookup.LikePattern;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.test.schemata.foodmart.FoodmartSchema;
 import org.apache.calcite.util.ImmutableBitSet;
@@ -201,8 +202,8 @@ class LatticeTest {
     modelWithLattice("EMPLOYEES", "select * from \"foodmart\".\"days\"")
         .doWithConnection(c -> {
           final SchemaPlus schema = c.getRootSchema();
-          final SchemaPlus adhoc = schema.getSubSchema("adhoc");
-          assertThat(adhoc.getTableNames().contains("EMPLOYEES"), is(true));
+          final SchemaPlus adhoc = schema.subSchemas().get("adhoc");
+          assertThat(adhoc.tables().getNames(LikePattern.any()).contains("EMPLOYEES"), is(true));
           final Map.Entry<String, CalciteSchema.LatticeEntry> entry =
               adhoc.unwrap(CalciteSchema.class).getLatticeMap().firstEntry();
           final Lattice lattice = entry.getValue().getLattice();
@@ -230,8 +231,8 @@ class LatticeTest {
             + "join \"foodmart\".\"time_by_day\" as t on t.\"time_id\" = s.\"time_id\"")
         .doWithConnection(c -> {
           final SchemaPlus schema = c.getRootSchema();
-          final SchemaPlus adhoc = schema.getSubSchema("adhoc");
-          assertThat(adhoc.getTableNames().contains("EMPLOYEES"), is(true));
+          final SchemaPlus adhoc = schema.subSchemas().get("adhoc");
+          assertThat(adhoc.tables().getNames(LikePattern.any()).contains("EMPLOYEES"), is(true));
           final Map.Entry<String, CalciteSchema.LatticeEntry> entry =
               adhoc.unwrap(CalciteSchema.class).getLatticeMap().firstEntry();
           final Lattice lattice = entry.getValue().getLattice();

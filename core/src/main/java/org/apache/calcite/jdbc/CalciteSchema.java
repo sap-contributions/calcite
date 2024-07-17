@@ -24,6 +24,9 @@ import org.apache.calcite.rel.type.RelProtoDataType;
 import org.apache.calcite.schema.*;
 import org.apache.calcite.schema.impl.MaterializedViewTable;
 import org.apache.calcite.schema.impl.StarTable;
+import org.apache.calcite.schema.lookup.LikePattern;
+import org.apache.calcite.schema.lookup.Lookup;
+import org.apache.calcite.schema.lookup.Named;
 import org.apache.calcite.util.NameMap;
 import org.apache.calcite.util.NameMultimap;
 import org.apache.calcite.util.NameSet;
@@ -62,13 +65,17 @@ public abstract class CalciteSchema {
   /** Tables explicitly defined in this schema. Does not include tables in
    * {@link #schema}. */
   protected final NameMap<TableEntry> tableMap;
+  private final Lookup<TableEntry> tables;
   protected final NameMultimap<FunctionEntry> functionMap;
   protected final NameMap<TypeEntry> typeMap;
   protected final NameMap<LatticeEntry> latticeMap;
   protected final NameSet functionNames;
   protected final NameMap<FunctionEntry> nullaryFunctionMap;
   protected final NameMap<CalciteSchema> subSchemaMap;
+  private final Lookup<CalciteSchema> subSchemas;
   private @Nullable List<? extends List<String>> path;
+
+
 
   protected CalciteSchema(@Nullable CalciteSchema parent, Schema schema,
       String name,
@@ -84,8 +91,10 @@ public abstract class CalciteSchema {
     this.schema = schema;
     this.name = name;
     this.tableMap = tableMap != null ? tableMap : new NameMap<>();
+    this.tables = Lookup.concat(Lookup.of(this.tableMap),schema.tables().map((s,n) -> tableEntry(n,s)));
     this.latticeMap = latticeMap != null ? latticeMap : new NameMap<>();
     this.subSchemaMap = subSchemaMap != null ? subSchemaMap : new NameMap<>();
+    this.subSchemas = Lookup.concat(Lookup.of(this.subSchemaMap),schema.subSchemas().map((s,n) -> createSubSchema(s,n)));
     if (functionMap == null) {
       this.functionMap = new NameMultimap<>();
       this.functionNames = new NameSet();
@@ -106,17 +115,8 @@ public abstract class CalciteSchema {
     this.path = path;
   }
 
-  /** Returns a sub-schema with a given name that is defined implicitly
-   * (that is, by the underlying {@link Schema} object, not explicitly
-   * by a call to {@link #add(String, Schema)}), or null. */
-  protected abstract @Nullable CalciteSchema getImplicitSubSchema(String schemaName,
-      boolean caseSensitive);
-
-  /** Returns a table with a given name that is defined implicitly
-   * (that is, by the underlying {@link Schema} object, not explicitly
-   * by a call to {@link #add(String, Table)}), or null. */
-  protected abstract @Nullable TableEntry getImplicitTable(String tableName,
-      boolean caseSensitive);
+  /** Creates a sub-schema with a given name that is defined implicitly */
+  protected abstract @Nullable CalciteSchema createSubSchema( Schema schema, String name);
 
   /** Returns a type with a given name that is defined implicitly
    * (that is, by the underlying {@link Schema} object, not explicitly
@@ -129,10 +129,6 @@ public abstract class CalciteSchema {
    * not explicitly by a call to {@link #add(String, Function)}), or null. */
   protected abstract @Nullable TableEntry getImplicitTableBasedOnNullaryFunction(String tableName,
       boolean caseSensitive);
-
-  /** Adds implicit sub-schemas to a builder. */
-  protected abstract void addImplicitSubSchemaToBuilder(
-      ImmutableSortedMap.Builder<String, CalciteSchema> builder);
 
   /** Adds implicit functions to a builder. */
   protected abstract void addImplicitFunctionsToBuilder(
@@ -243,13 +239,9 @@ public abstract class CalciteSchema {
 
   public final @Nullable CalciteSchema getSubSchema(String schemaName,
       boolean caseSensitive) {
-    // Check explicit schemas.
-    //noinspection LoopStatementThatDoesntLoop
-    for (Map.Entry<String, CalciteSchema> entry
-        : subSchemaMap.range(schemaName, caseSensitive).entrySet()) {
-      return entry.getValue();
-    }
-    return getImplicitSubSchema(schemaName, caseSensitive);
+    return caseSensitive
+        ? subSchemas.get(schemaName)
+        : Named.entity(subSchemas.getIgnoreCase(schemaName));
   }
 
   /** Adds a child schema of this schema. */
@@ -267,13 +259,7 @@ public abstract class CalciteSchema {
 
   /** Returns a table with the given name. Does not look for views. */
   public final @Nullable TableEntry getTable(String tableName, boolean caseSensitive) {
-    // Check explicit tables.
-    //noinspection LoopStatementThatDoesntLoop
-    for (Map.Entry<String, TableEntry> entry
-        : tableMap.range(tableName, caseSensitive).entrySet()) {
-      return entry.getValue();
-    }
-    return getImplicitTable(tableName, caseSensitive);
+    return Lookup.get(tables,tableName,caseSensitive);
   }
 
   public String getName() {
@@ -315,7 +301,6 @@ public abstract class CalciteSchema {
     final ImmutableSortedMap.Builder<String, CalciteSchema> builder =
         new ImmutableSortedMap.Builder<>(NameSet.COMPARATOR);
     builder.putAll(subSchemaMap.map());
-    addImplicitSubSchemaToBuilder(builder);
     return builder.build();
   }
 
@@ -610,6 +595,29 @@ public abstract class CalciteSchema {
   /** Implementation of {@link SchemaPlus} based on a
    * {@link org.apache.calcite.jdbc.CalciteSchema}. */
   private class SchemaPlusImpl implements SchemaPlus {
+    private final Lookup<Table> tables;
+    private final Lookup<? extends SchemaPlus> subSchemas;
+    private SchemaPlusImpl() {
+      this.tables = new Lookup<Table>() {
+        @Override
+        public @Nullable Table get(String name) {
+          final TableEntry entry = CalciteSchema.this.getTable(name,true);
+          return entry == null ? null : entry.getTable();
+        }
+
+        @Override
+        public @Nullable Named<Table> getIgnoreCase(String name) {
+          final TableEntry entry = CalciteSchema.this.getTable(name,false);
+          return entry == null ? null : new Named<>(entry.name, entry.getTable());
+        }
+
+        @Override
+        public Set<String> getNames(LikePattern pattern) {
+          return CalciteSchema.this.getTableNames(pattern);
+        }
+      };
+      this.subSchemas = CalciteSchema.this.subSchemas.map((schema,name) -> schema.plus());
+    }
     CalciteSchema calciteSchema() {
       return CalciteSchema.this;
     }
@@ -643,24 +651,11 @@ public abstract class CalciteSchema {
     }
 
     @Override public Lookup<Table> tables() {
-      return new Lookup<Table>() {
-        @Override
-        public @Nullable Table get(String name) {
-          final TableEntry entry = CalciteSchema.this.getTable(name,true);
-          return entry == null ? null : entry.getTable();
-        }
+      return tables;
+    }
 
-        @Override
-        public @Nullable Named<Table> getIgnoreCase(String name) {
-          final TableEntry entry = CalciteSchema.this.getTable(name,false);
-          return entry == null ? null : new Named<>(entry.name, entry.getTable());
-        }
-
-        @Override
-        public Set<String> getNames(LikePattern pattern) {
-          return CalciteSchema.this.getTableNames(pattern);
-        }
-      };
+    @Override public Lookup<? extends SchemaPlus> subSchemas() {
+      return subSchemas;
     }
 
     @Deprecated @Override public @Nullable Table getTable(String name) {
@@ -689,15 +684,13 @@ public abstract class CalciteSchema {
       return CalciteSchema.this.getFunctionNames();
     }
 
-    @Override public @Nullable SchemaPlus getSubSchema(String name) {
-      final CalciteSchema subSchema =
-          CalciteSchema.this.getSubSchema(name, true);
-      return subSchema == null ? null : subSchema.plus();
+    @Deprecated @Override public @Nullable SchemaPlus getSubSchema(String name) {
+      return subSchemas.get(name);
     }
 
-    @Override public Set<String> getSubSchemaNames() {
+    @Deprecated @Override public Set<String> getSubSchemaNames() {
       //noinspection RedundantCast
-      return (Set<String>) CalciteSchema.this.getSubSchemaMap().keySet();
+      return subSchemas.getNames(LikePattern.any());
     }
 
     @Override public SchemaPlus add(String name, Schema schema) {

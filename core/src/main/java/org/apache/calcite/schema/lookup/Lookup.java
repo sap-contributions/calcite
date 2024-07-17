@@ -14,15 +14,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.calcite.schema;
+package org.apache.calcite.schema.lookup;
 
-import org.apache.calcite.linq4j.tree.Expression;
-import org.apache.calcite.rel.type.RelProtoDataType;
+import org.apache.calcite.util.NameMap;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-import java.util.Collection;
 import java.util.Set;
+import java.util.function.BiFunction;
+import java.util.function.Function;
 
 /**
  * A case sensitive/insensitive lookup for tables or functions
@@ -43,7 +43,7 @@ public interface Lookup<T> {
    * @param name Name
    * @return Entity, or null
    */
-  @Nullable  Named<T> getIgnoreCase(String name) ;
+  @Nullable Named<T> getIgnoreCase(String name) ;
 
   /**
    * Returns the names of the entities in matching pattern.
@@ -52,14 +52,30 @@ public interface Lookup<T> {
    */
   Set<String> getNames(LikePattern pattern);
 
-  static <T> Named<T> get(Lookup<T> lookup, String name, boolean caseSensitive) {
+  default <S> Lookup<S> map(BiFunction<T,String,S> mapper) {
+    return new MappedLookup<>(this,mapper);
+  }
+
+  static <T> T get(Lookup<T> lookup, String name, boolean caseSensitive) {
     if ( caseSensitive) {
       T entry = lookup.get(name);
       if ( entry == null ) {
         return null;
       }
-      return new Named<T>(name,entry);
+      return entry;
     }
-    return lookup.getIgnoreCase(name);
+    return Named.entity(lookup.getIgnoreCase(name));
+  }
+
+  static <T> Lookup<T> empty() {
+    return (Lookup<T>) EmptyLookup.INSTANCE;
+  }
+
+  static <T> Lookup<T> of(NameMap<T> map) {
+    return new NameMapLookup<>(map);
+  }
+
+  static <T> Lookup<T> concat(Lookup<T> ...lookups) {
+    return new ConcatLookup<>(lookups);
   }
 }
