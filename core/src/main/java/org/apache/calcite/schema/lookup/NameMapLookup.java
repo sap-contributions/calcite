@@ -15,40 +15,41 @@
  * limitations under the License.
  */
 
-package org.apache.calcite.schema.impl;
+package org.apache.calcite.schema.lookup;
 
 import org.apache.calcite.linq4j.function.Predicate1;
-import org.apache.calcite.schema.LikePattern;
-
-import org.apache.calcite.schema.Schema;
-
-import org.apache.calcite.schema.Table;
+import org.apache.calcite.util.NameMap;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
 
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-public class SimpleTableLookup extends IgnoreCaseLookup<Table>{
+class NameMapLookup<T> implements Lookup<T> {
+  private final NameMap<T> map;
 
-  private final Schema schema;
-
-  public SimpleTableLookup(Schema schema) {
-    this.schema = schema;
+  NameMapLookup(NameMap<T> map) {
+    this.map = map;
   }
-
-  @SuppressWarnings("deprecation")
-  @Nullable
   @Override
-  public Table get(String name) {
-    return schema.getTable(name);
+  public @Nullable T get(String name) {
+    Map.Entry<String, T> entry = map.range(name,true).firstEntry();
+    if ( entry != null) return entry.getValue();
+    return null;
   }
 
-  @SuppressWarnings("deprecation")
+  @Override
+  public @Nullable Named<T> getIgnoreCase(String name) {
+    Map.Entry<String, T> entry = map.range(name,false).firstEntry();
+    if ( entry != null) return new Named<>(entry.getKey(),entry.getValue());
+    return null;
+  }
+
   @Override
   public @Nullable Set<String> getNames(LikePattern pattern) {
     final Predicate1<String> matcher = pattern.matcher();
-    return schema.getTableNames().stream()
+    return map.map().keySet().stream()
         .filter(name -> matcher.apply(name))
         .collect(Collectors.toSet());
   }

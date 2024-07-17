@@ -14,21 +14,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.calcite.schema.impl;
+package org.apache.calcite.schema.lookup;
 
-import com.google.common.base.Suppliers;
-
-import org.apache.calcite.schema.LikePattern;
-import org.apache.calcite.schema.Lookup;
-import org.apache.calcite.schema.Named;
+import org.apache.calcite.schema.lookup.LikePattern;
+import org.apache.calcite.schema.lookup.Lookup;
+import org.apache.calcite.schema.lookup.Named;
 import org.apache.calcite.util.NameMap;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
-import java.util.function.Supplier;
 
 /**
  * An abstract base class for lookups. implementing case insensitive lookup

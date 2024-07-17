@@ -15,27 +15,31 @@
  * limitations under the License.
  */
 
-package org.apache.calcite.schema;
+package org.apache.calcite.schema.lookup;
 
 import java.security.InvalidParameterException;
 
 public class Named<T> {
   private final String name;
-  private final T table;
+  private final T entity;
 
-  public Named(String name, T table) {
+  public Named(String name, T entity) {
     this.name = name;
-    if ( table == null) {
+    if (entity == null) {
       throw new InvalidParameterException("table");
     }
-    this.table = table;
+    this.entity = entity;
   }
 
-  public String name() {
+  public final String name() {
     return name;
   }
 
-  public T table() {
-    return table;
+  public final T entity() {
+    return entity;
+  }
+
+  public static <T> T entity(Named<T> named) {
+    return named == null ? null : named.entity;
   }
 }

@@ -251,7 +251,7 @@ public class ServerDdlExecutor extends DdlExecutorImpl {
       CalcitePrepare.Context context) {
     final Pair<CalciteSchema, String> pair =
         schema(context, true, create.name);
-    final SchemaPlus subSchema0 = pair.left.plus().getSubSchema(pair.right);
+    final SchemaPlus subSchema0 = pair.left.plus().subSchemas().get(pair.right);
     if (subSchema0 != null) {
       if (!create.getReplace() && !create.ifNotExists) {
         throw SqlUtil.newContextException(create.name.getParserPosition(),
@@ -419,7 +419,7 @@ public class ServerDdlExecutor extends DdlExecutorImpl {
   public void execute(SqlCreateSchema create,
       CalcitePrepare.Context context) {
     final Pair<CalciteSchema, String> pair = schema(context, true, create.name);
-    final SchemaPlus subSchema0 = pair.left.plus().getSubSchema(pair.right);
+    final SchemaPlus subSchema0 = pair.left.plus().subSchemas().get(pair.right);
     if (subSchema0 != null) {
       if (create.ifNotExists) {
         return;

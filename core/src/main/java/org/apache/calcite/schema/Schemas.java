@@ -125,7 +125,7 @@ public final class Schemas {
   /** Returns the expression for a sub-schema. */
   public static Expression subSchemaExpression(SchemaPlus schema, String name,
       Class type) {
-    // (Type) schemaExpression.getSubSchema("name")
+    // (Type) schemaExpression.subSchemas().get("name")
     final Expression schemaExpression = expression(schema);
     Expression call =
         Expressions.call(BuiltInMethod.SCHEMAS_GET_EXISTING_SUB_SCHEMA.method,
@@ -140,7 +140,7 @@ public final class Schemas {
   }
 
   public static SchemaPlus getExistingSubSchema(SchemaPlus schema, String name) {
-    SchemaPlus subSchema = schema.getSubSchema(name);
+    SchemaPlus subSchema = schema.subSchemas().get(name);
     if (subSchema == null) {
       throw new NoSuchElementException("Sub schema " +  name + " not found in " + schema.getName());
     }
@@ -244,7 +244,7 @@ public final class Schemas {
       String name = iterator.next();
       requireNonNull(schema, "schema");
       if (iterator.hasNext()) {
-        SchemaPlus next = schema.getSubSchema(name);
+        SchemaPlus next = schema.subSchemas().get(name);
         if (next == null) {
           throw new IllegalArgumentException("schema " + name + " is not found in " + schema);
         }
@@ -308,7 +308,7 @@ public final class Schemas {
       String name = iterator.next();
       requireNonNull(schema, "schema");
       if (iterator.hasNext()) {
-        SchemaPlus next = schema.getSubSchema(name);
+        SchemaPlus next = schema.subSchemas().get(name);
         if (next == null) {
           throw new IllegalArgumentException("schema " + name + " is not found in " + schema);
         }
@@ -585,7 +585,7 @@ public final class Schemas {
       if (!iterator.hasNext()) {
         return path(builder.build());
       }
-      Schema next = schema.getSubSchema(name);
+      Schema next = schema.subSchemas().get(name);
       if (next == null) {
         throw new IllegalArgumentException("schema " + name + " is not found in " + schema);
       }

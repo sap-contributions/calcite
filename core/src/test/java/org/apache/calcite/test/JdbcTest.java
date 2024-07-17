@@ -58,7 +58,7 @@ import org.apache.calcite.rel.type.RelProtoDataType;
 import org.apache.calcite.runtime.FlatLists;
 import org.apache.calcite.runtime.Hook;
 import org.apache.calcite.runtime.SqlFunctions;
-import org.apache.calcite.schema.LikePattern;
+import org.apache.calcite.schema.lookup.LikePattern;
 import org.apache.calcite.schema.Schema;
 import org.apache.calcite.schema.SchemaFactory;
 import org.apache.calcite.schema.SchemaPlus;
@@ -1204,7 +1204,7 @@ public class JdbcTest {
     final CalciteConnection calciteConnection =
         connection.unwrap(CalciteConnection.class);
     final SchemaPlus rootSchema = calciteConnection.getRootSchema();
-    final SchemaPlus foodmart = rootSchema.getSubSchema("foodmart");
+    final SchemaPlus foodmart = rootSchema.subSchemas().get("foodmart");
     rootSchema.add("foodmart2", new CloneSchema(foodmart));
     Statement statement = connection.createStatement();
     ResultSet resultSet =
@@ -1222,8 +1222,8 @@ public class JdbcTest {
     final CalciteConnection calciteConnection =
         connection.unwrap(CalciteConnection.class);
     final SchemaPlus rootSchema = calciteConnection.getRootSchema();
-    final SchemaPlus foodmart = rootSchema.getSubSchema("foodmart");
-    final JdbcTable timeByDay = (JdbcTable) foodmart.getTable("time_by_day");
+    final SchemaPlus foodmart = rootSchema.subSchemas().get("foodmart");
+    final JdbcTable timeByDay = (JdbcTable) foodmart.tables().get("time_by_day");
     final int rows = timeByDay.scan(DataContexts.of(calciteConnection, rootSchema)).count();
     assertThat(rows, OrderingComparison.greaterThan(0));
   }
@@ -7348,7 +7348,7 @@ public class JdbcTest {
     aSchema.setCacheEnabled(true);
 
     // explicit should win implicit.
-    assertThat(aSchema.getSubSchemaNames(), hasSize(1));
+    assertThat(aSchema.subSchemas().getNames(LikePattern.any()), hasSize(1));
   }
 
   @Test void testSimpleCalciteSchema() throws Exception {
@@ -7369,13 +7369,13 @@ public class JdbcTest {
     // add implicit schema "/a/c"
     aSubSchemaMap.put("c", new AbstractSchema());
 
-    assertThat(aSchema.getSubSchema("c"), notNullValue());
-    assertThat(aSchema.getSubSchema("b"), notNullValue());
+    assertThat(aSchema.subSchemas().get("c"), notNullValue());
+    assertThat(aSchema.subSchemas().get("b"), notNullValue());
 
     // add implicit schema "/a/b"
     aSubSchemaMap.put("b", new AbstractSchema());
     // explicit should win implicit.
-    assertThat(aSchema.getSubSchemaNames(), hasSize(2));
+    assertThat(aSchema.subSchemas().getNames(LikePattern.any()), hasSize(2));
   }
 
   @Test void testCaseSensitiveConfigurableSimpleCalciteSchema() throws Exception {
@@ -7437,7 +7437,7 @@ public class JdbcTest {
     // add view definition
     final String viewName = "V";
     final org.apache.calcite.schema.Function view =
-        ViewTable.viewMacro(rootSchema.getSubSchema("a"),
+        ViewTable.viewMacro(rootSchema.subSchemas().get("a"),
             "values('1', '2')", null, null, false);
     functionMap.put(viewName, view);
 
@@ -7472,33 +7472,33 @@ public class JdbcTest {
       }
     });
     aSchema.setCacheEnabled(true);
-    assertThat(aSchema.getSubSchemaNames(), hasSize(0));
+    assertThat(aSchema.subSchemas().getNames(LikePattern.any()), hasSize(0));
 
     // first call, to populate the cache
-    assertThat(aSchema.getSubSchemaNames(), hasSize(0));
+    assertThat(aSchema.subSchemas().getNames(LikePattern.any()), hasSize(0));
 
     // create schema "/a/b1". Appears only when we disable caching.
     aSubSchemaMap.put("b1", new AbstractSchema());
-    assertThat(aSchema.getSubSchemaNames(), hasSize(0));
-    assertThat(aSchema.getSubSchema("b1"), nullValue());
+    assertThat(aSchema.subSchemas().getNames(LikePattern.any()), hasSize(1));
+    assertThat(aSchema.subSchemas().get("b1"), nullValue());
     aSchema.setCacheEnabled(false);
-    assertThat(aSchema.getSubSchemaNames(), hasSize(1));
-    assertThat(aSchema.getSubSchema("b1"), notNullValue());
+    assertThat(aSchema.subSchemas().getNames(LikePattern.any()), hasSize(1));
+    assertThat(aSchema.subSchemas().get("b1"), notNullValue());
 
     // create schema "/a/b2". Appears immediately, because caching is disabled.
     aSubSchemaMap.put("b2", new AbstractSchema());
-    assertThat(aSchema.getSubSchemaNames(), hasSize(2));
+    assertThat(aSchema.subSchemas().getNames(LikePattern.any()), hasSize(2));
 
     // an explicit sub-schema appears immediately, even if caching is enabled
     aSchema.setCacheEnabled(true);
-    assertThat(aSchema.getSubSchemaNames(), hasSize(2));
+    assertThat(aSchema.subSchemas().getNames(LikePattern.any()), hasSize(2));
     aSchema.add("b3", new AbstractSchema()); // explicit
     aSubSchemaMap.put("b4", new AbstractSchema()); // implicit
-    assertThat(aSchema.getSubSchemaNames(), hasSize(3));
+    assertThat(aSchema.subSchemas().getNames(LikePattern.any()), hasSize(3));
     aSchema.setCacheEnabled(false);
-    assertThat(aSchema.getSubSchemaNames(), hasSize(4));
-    for (String name : aSchema.getSubSchemaNames()) {
-      assertThat(aSchema.getSubSchema(name), notNullValue());
+    assertThat(aSchema.subSchemas().getNames(LikePattern.any()), hasSize(4));
+    for (String name : aSchema.subSchemas().getNames(LikePattern.any())) {
+      assertThat(aSchema.subSchemas().get(name), notNullValue());
     }
 
     // create schema "/a2"
@@ -7509,21 +7509,21 @@ public class JdbcTest {
       }
     });
     a2Schema.setCacheEnabled(true);
-    assertThat(a2Schema.getSubSchemaNames(), hasSize(0));
+    assertThat(a2Schema.subSchemas().getNames(LikePattern.any()), hasSize(0));
 
     // create schema "/a2/b3". Change not visible since caching is enabled.
     a2SubSchemaMap.put("b3", new AbstractSchema());
-    assertThat(a2Schema.getSubSchemaNames(), hasSize(0));
+    assertThat(a2Schema.subSchemas().getNames(LikePattern.any()), hasSize(0));
     Thread.sleep(1);
-    assertThat(a2Schema.getSubSchemaNames(), hasSize(0));
+    assertThat(a2Schema.subSchemas().getNames(LikePattern.any()), hasSize(0));
 
     // Change visible after we turn off caching.
     a2Schema.setCacheEnabled(false);
-    assertThat(a2Schema.getSubSchemaNames(), hasSize(1));
+    assertThat(a2Schema.subSchemas().getNames(LikePattern.any()), hasSize(1));
     a2SubSchemaMap.put("b4", new AbstractSchema());
-    assertThat(a2Schema.getSubSchemaNames(), hasSize(2));
-    for (String name : aSchema.getSubSchemaNames()) {
-      assertThat(aSchema.getSubSchema(name), notNullValue());
+    assertThat(a2Schema.subSchemas().getNames(LikePattern.any()), hasSize(2));
+    for (String name : aSchema.subSchemas().getNames(LikePattern.any())) {
+      assertThat(aSchema.subSchemas().get(name), notNullValue());
     }
 
     // add tables and retrieve with various case sensitivities
@@ -7533,7 +7533,7 @@ public class JdbcTest {
     a2Schema.add("TABLE1", table);
     a2Schema.add("tabLe1", table);
     a2Schema.add("tabLe2", table);
-    assertThat(a2Schema.getTableNames(), hasSize(4));
+    assertThat(a2Schema.tables().getNames(LikePattern.any()), hasSize(4));
     final CalciteSchema a2CalciteSchema = CalciteSchema.from(a2Schema);
     assertThat(a2CalciteSchema.getTable("table1", true), notNullValue());
     assertThat(a2CalciteSchema.getTable("table1", false), notNullValue());
@@ -8588,7 +8588,7 @@ public class JdbcTest {
       super(dataSource, dialect, convention, catalog, schema);
     }
 
-    public final Table customer = getTable("customer");
+    public final Table customer = tables().get("customer");
   }
 
   public static class Customer {

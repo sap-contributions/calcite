@@ -19,7 +19,10 @@ package org.apache.calcite.schema;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.rel.type.RelProtoDataType;
 
-import org.apache.calcite.schema.impl.SimpleTableLookup;
+import org.apache.calcite.schema.lookup.SimpleLookup;
+
+import org.apache.calcite.schema.lookup.LikePattern;
+import org.apache.calcite.schema.lookup.Lookup;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -65,8 +68,13 @@ public interface Schema {
    * @return Lookup
    */
   default Lookup<Table> tables() {
-    return new SimpleTableLookup(this);
+    return new SimpleLookup<Table>(this::getTable, this::getTableNames);
   }
+
+  default Lookup<? extends Schema> subSchemas() {
+    return new SimpleLookup<Schema>(this::getSubSchema, this::getSubSchemaNames);
+  }
+
   /**
    * Returns a table with a given name, or null if not found.
    *
@@ -124,15 +132,21 @@ public interface Schema {
    * Returns a sub-schema with a given name, or null.
    *
    * @param name Sub-schema name
+   * @deprecated
+   * Please use {@link Schema#subSchemas()} ()} and {@link Lookup#get(String)} instead.
    * @return Sub-schema with a given name, or null
    */
+  @Deprecated
   @Nullable Schema getSubSchema(String name);
 
   /**
    * Returns the names of this schema's child schemas.
    *
+   * @deprecated
+   * Please use {@link Schema#subSchemas()} ()} and {@link Lookup#getNames(LikePattern)} instead.
    * @return Names of this schema's child schemas
    */
+  @Deprecated
   Set<String> getSubSchemaNames();
 
   /**
