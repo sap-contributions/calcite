@@ -15,27 +15,10 @@
  * limitations under the License.
  */
 
-package org.apache.calcite.schema;
+package org.apache.calcite.schema.lookup;
 
-import java.security.InvalidParameterException;
-
-public class Named<T> {
-  private final String name;
-  private final T table;
-
-  public Named(String name, T table) {
-    this.name = name;
-    if ( table == null) {
-      throw new InvalidParameterException("table");
-    }
-    this.table = table;
-  }
-
-  public String name() {
-    return name;
-  }
-
-  public T table() {
-    return table;
-  }
+/**
+ * Exceptions used in caches to signal none existing entries
+ */
+class EntryNotFoundException extends RuntimeException{
 }

@@ -15,9 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.calcite.schema.impl;
-
-import com.google.common.base.Suppliers;
+package org.apache.calcite.schema.lookup;
 
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
@@ -25,25 +23,16 @@ import com.google.common.cache.LoadingCache;
 
 import com.google.common.util.concurrent.UncheckedExecutionException;
 
-import org.apache.calcite.adapter.jdbc.JdbcSchema;
-import org.apache.calcite.adapter.jdbc.JdbcTable;
-import org.apache.calcite.linq4j.function.Predicate1;
-import org.apache.calcite.schema.LikePattern;
-import org.apache.calcite.schema.Lookup;
-import org.apache.calcite.schema.Named;
-import org.apache.calcite.schema.Schema;
-import org.apache.calcite.schema.Table;
-import org.apache.calcite.util.NameMap;
+import org.apache.calcite.schema.lookup.LikePattern;
+import org.apache.calcite.schema.lookup.Lookup;
+import org.apache.calcite.schema.lookup.Named;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 /**
  * This class can be used to cache lookups

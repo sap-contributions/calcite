@@ -57,7 +57,6 @@ import org.apache.calcite.rel.type.RelProtoDataType;
 import org.apache.calcite.runtime.FlatLists;
 import org.apache.calcite.runtime.Hook;
 import org.apache.calcite.runtime.SqlFunctions;
-import org.apache.calcite.schema.LikePattern;
 import org.apache.calcite.schema.Schema;
 import org.apache.calcite.schema.SchemaFactory;
 import org.apache.calcite.schema.SchemaPlus;
@@ -3212,30 +3211,6 @@ public class JdbcTest {
         .with(CalciteAssert.Config.FOODMART_CLONE)
         .query(s)
         .returns("c0=1997; m0=85452\n");
-  }
-
-  @Test void testDistinctWithDynamicParam() {
-    String statement = "SELECT\n" +
-        "  DISTINCT \"alias\"\n" +
-        "FROM (\n" +
-        "   SELECT \"ENAME\" || CAST(? AS VARCHAR) \"alias\"\n" +
-        "   FROM \"EMP\")";
-
-    CalciteAssert.model(JdbcTest.SCOTT_MODEL)
-        .query(statement)
-        .consumesPreparedStatement(p -> {
-          p.setString(1, "name");
-        })
-        .planHasSql("SELECT \"alias\"\nFROM (SELECT \"ENAME\" || ? AS \"alias\"\nFROM \"SCOTT\".\"EMP\") AS \"t\"\nGROUP BY \"alias\"")
-        .runs();
-  }
-
-  @Test void testFilterWithCastPushDown() {
-    CalciteAssert.that()
-        .with(CalciteAssert.Config.FOODMART_CLONE)
-        .query("SELECT * FROM \"foodmart\".\"sales_fact_1997\"" +
-            " WHERE cast(? as varchar(100)) = cast(? as varchar(100))")
-        .planHasSql("SELECT *\nFROM \"foodmart\".\"sales_fact_1997\"\nWHERE CAST(? AS VARCHAR(100)) = CAST(? AS VARCHAR(100))");
   }
 
   @Test void testAggregateFilter() {

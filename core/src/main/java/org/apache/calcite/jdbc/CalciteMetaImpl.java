@@ -42,7 +42,7 @@ import org.apache.calcite.rel.type.RelDataTypeFactoryImpl;
 import org.apache.calcite.rel.type.RelDataTypeSystem;
 import org.apache.calcite.runtime.FlatLists;
 import org.apache.calcite.runtime.Hook;
-import org.apache.calcite.schema.LikePattern;
+import org.apache.calcite.schema.lookup.LikePattern;
 import org.apache.calcite.schema.Schema;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.schema.Table;
