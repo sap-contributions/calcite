@@ -260,7 +260,7 @@ public class ServerDdlExecutor extends DdlExecutorImpl {
     final Pair<@Nullable CalciteSchema, String> pair =
         schema(context, true, create.name);
     requireNonNull(pair.left); // TODO: should not assume parent schema exists
-    if (pair.left.plus().getSubSchema(pair.right) != null) {
+    if (pair.left.plus().subSchemas().get(pair.right) != null) {
       if (!create.getReplace() && !create.ifNotExists) {
         throw SqlUtil.newContextException(create.name.getParserPosition(),
             RESOURCE.schemaExists(pair.right));
@@ -436,7 +436,7 @@ public class ServerDdlExecutor extends DdlExecutorImpl {
     final Pair<@Nullable CalciteSchema, String> pair =
         schema(context, true, create.name);
     requireNonNull(pair.left); // TODO: should not assume parent schema exists
-    if (pair.left.plus().getSubSchema(pair.right) != null) {
+    if (pair.left.plus().subSchemas().get(pair.right) != null) {
       if (create.ifNotExists) {
         return;
       }

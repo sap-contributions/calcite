@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.calcite.schema;
+package org.apache.calcite.schema.lookup;
 
 import org.apache.calcite.linq4j.function.Predicate1;
 

@@ -16,12 +16,6 @@
  */
 package org.apache.calcite.adapter.jdbc;
 
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.CacheLoader;
-import com.google.common.cache.LoadingCache;
-
-import com.google.common.util.concurrent.UncheckedExecutionException;
-
 import org.apache.calcite.avatica.AvaticaUtils;
 import org.apache.calcite.avatica.MetaImpl;
 import org.apache.calcite.avatica.SqlType;
@@ -33,8 +27,10 @@ import org.apache.calcite.rel.type.RelDataTypeImpl;
 import org.apache.calcite.rel.type.RelDataTypeSystem;
 import org.apache.calcite.rel.type.RelProtoDataType;
 import org.apache.calcite.schema.*;
-import org.apache.calcite.schema.impl.CachingLookup;
-import org.apache.calcite.schema.impl.IgnoreCaseLookup;
+import org.apache.calcite.schema.lookup.CachingLookup;
+import org.apache.calcite.schema.lookup.IgnoreCaseLookup;
+import org.apache.calcite.schema.lookup.LikePattern;
+import org.apache.calcite.schema.lookup.Lookup;
 import org.apache.calcite.sql.SqlDialect;
 import org.apache.calcite.sql.SqlDialectFactory;
 import org.apache.calcite.sql.SqlDialectFactoryImpl;
@@ -46,7 +42,6 @@ import org.apache.calcite.util.Util;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMultimap;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Ordering;
 
@@ -64,12 +59,9 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.Spliterator;
 import java.util.Spliterators;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -112,6 +104,7 @@ public class JdbcSchema implements Schema, Wrapper {
       }
     }
   });
+  private final Lookup<JdbcSchema> subSchemas = Lookup.empty();
 
   @Experimental
   public static final ThreadLocal<@Nullable Foo> THREAD_METADATA = new ThreadLocal<>();
@@ -238,6 +231,11 @@ public class JdbcSchema implements Schema, Wrapper {
   @Override public Lookup<Table> tables() {
     return tables;
   }
+
+  @Override public Lookup<? extends Schema> subSchemas() {
+    return subSchemas;
+  }
+
 
   @Override public boolean isMutable() {
     return false;
@@ -535,13 +533,12 @@ public class JdbcSchema implements Schema, Wrapper {
     return (Set<String>) getTypes().keySet();
   }
 
-  @Override public @Nullable Schema getSubSchema(String name) {
-    // JDBC does not support sub-schemas.
-    return null;
+  @Deprecated @Override public @Nullable Schema getSubSchema(String name) {
+    return subSchemas.get(name);
   }
 
-  @Override public Set<String> getSubSchemaNames() {
-    return ImmutableSet.of();
+  @Deprecated @Override public Set<String> getSubSchemaNames() {
+    return subSchemas.getNames(LikePattern.any());
   }
 
   @Override public <T extends Object> @Nullable T unwrap(Class<T> clazz) {

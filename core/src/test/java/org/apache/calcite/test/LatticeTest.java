@@ -24,6 +24,7 @@ import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.rules.materialize.MaterializedViewRules;
 import org.apache.calcite.runtime.Hook;
+import org.apache.calcite.schema.lookup.LikePattern;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.sql.SqlDialect;
 import org.apache.calcite.sql.SqlDialect.DatabaseProduct;
@@ -206,7 +207,7 @@ class LatticeTest {
         .doWithConnection(c -> {
           final SchemaPlus schema = c.getRootSchema();
           final SchemaPlus adhoc =
-              requireNonNull(schema.getSubSchema("adhoc"));
+              requireNonNull(schema.subSchemas().get("adhoc"));
           assertThat(adhoc.getTableNames().contains("EMPLOYEES"), is(true));
           final CalciteSchema adhocSchema =
               requireNonNull(adhoc.unwrap(CalciteSchema.class));
@@ -269,7 +270,7 @@ class LatticeTest {
         .doWithConnection(c -> {
           final SchemaPlus schema = c.getRootSchema();
           final SchemaPlus adhoc =
-              requireNonNull(schema.getSubSchema("adhoc"));
+              requireNonNull(schema.subSchemas().get("adhoc"));
           assertThat(adhoc.getTableNames().contains("EMPLOYEES"), is(true));
           final CalciteSchema adhocSchema =
               requireNonNull(adhoc.unwrap(CalciteSchema.class));

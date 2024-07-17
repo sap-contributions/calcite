@@ -49,6 +49,7 @@ import org.apache.calcite.rel.type.RelDataTypeSystemImpl;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.schema.lookup.LikePattern;
 import org.apache.calcite.schema.ModifiableTable;
 import org.apache.calcite.schema.Path;
 import org.apache.calcite.schema.ProjectableFilterableTable;
@@ -152,7 +153,7 @@ public class FrameworksTest {
   /** Unit test to test create root schema which has no "metadata" schema. */
   @Test void testCreateRootSchemaWithNoMetadataSchema() {
     SchemaPlus rootSchema = Frameworks.createRootSchema(false);
-    assertThat(rootSchema.getSubSchemaNames(), hasSize(0));
+    assertThat(rootSchema.subSchemas().getNames(LikePattern.any()), hasSize(0));
   }
 
   /** Tests that validation (specifically, inferring the result of adding

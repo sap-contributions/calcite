@@ -1079,7 +1079,7 @@ public class CalciteAssert {
 
   private static SchemaPlus addSchemaIfNotExists(SchemaPlus rootSchema,
         SchemaSpec schemaSpec) {
-    final SchemaPlus schema = rootSchema.getSubSchema(schemaSpec.schemaName);
+    final SchemaPlus schema = rootSchema.subSchemas().get(schemaSpec.schemaName);
     if (schema != null) {
       return schema;
     }
@@ -2297,11 +2297,11 @@ public class CalciteAssert {
       return ImmutableSet.of();
     }
 
-    @Override public @Nullable Schema getSubSchema(String name) {
+    @Deprecated @Override public @Nullable Schema getSubSchema(String name) {
       return null;
     }
 
-    @Override public Set<String> getSubSchemaNames() {
+    @Deprecated @Override public Set<String> getSubSchemaNames() {
       return ImmutableSet.of();
     }
 
