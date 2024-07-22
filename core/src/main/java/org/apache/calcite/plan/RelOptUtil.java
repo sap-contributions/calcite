@@ -878,6 +878,22 @@ public abstract class RelOptUtil {
         rel, castRowType, rename, RelFactories.DEFAULT_PROJECT_FACTORY);
   }
 
+  public static boolean hasCalcViewHint(RelNode rel) {
+    boolean hasCalcViewHint = false;
+    for (RelNode input : rel.getInputs()) {
+      input = input.stripped();
+      if (input instanceof TableScan) {
+        hasCalcViewHint = ((TableScan) input).getHints().stream().anyMatch(it -> it.hintName.equals(Hints.CALCULATION_VIEW));
+      } else {
+        hasCalcViewHint = hasCalcViewHint(input);
+      }
+      if (hasCalcViewHint) {
+        return hasCalcViewHint;
+      }
+    }
+    return hasCalcViewHint;
+  }
+
   /**
    * Creates a projection which casts a rel's output to a desired row type.
    *

@@ -21,6 +21,7 @@ import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.plan.RelOptSamplingParameters;
 import org.apache.calcite.plan.RelOptTable;
+import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.RelFieldCollation;
@@ -608,6 +609,7 @@ public class RelToSqlConverter extends SqlImplementor
    */
   protected Builder buildAggregate(Aggregate e, Builder builder,
       List<SqlNode> selectList, List<SqlNode> groupByList) {
+    boolean isCountStar = false;
     for (AggregateCall aggCall : e.getAggCallList()) {
       SqlNode aggCallSqlNode = builder.context.toSql(aggCall);
       RelDataType aggCallRelDataType = aggCall.getType();
@@ -616,8 +618,21 @@ public class RelToSqlConverter extends SqlImplementor
       } else if (aggCall.getAggregation() instanceof SqlMinMaxAggFunction) {
         aggCallSqlNode = dialect.rewriteMaxMinExpr(aggCallSqlNode, aggCallRelDataType);
       }
+      isCountStar =  (RelOptUtil.hasCalcViewHint(e) && selectList.isEmpty() && aggCall.getAggregation().getKind() == SqlKind.COUNT);
       addSelect(selectList, aggCallSqlNode, e.getRowType());
     }
+    if (isCountStar) {
+      SqlSelect oldSelect = builder.select;
+      boolean isStar = false;
+      if (oldSelect.getSelectList().size() == 1 && oldSelect.getSelectList().get(0) instanceof SqlIdentifier) {
+        isStar = ((SqlIdentifier) oldSelect.getSelectList().get(0)).isStar();
+      }
+
+      if (!isStar) {
+        builder.setFrom(oldSelect.clone(oldSelect.getParserPosition()));
+      }
+    }
+
     builder.setSelect(new SqlNodeList(selectList, POS));
     if (!groupByList.isEmpty() || e.getAggCallList().isEmpty()) {
       // Some databases don't support "GROUP BY ()". We can omit it as long
