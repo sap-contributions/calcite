@@ -2355,6 +2355,10 @@ public abstract class SqlImplementor {
       select.setSelectList(nodeList);
     }
 
+    public void setFrom(SqlNode node) {
+      select.setFrom(node);
+    }
+
     public void setWhere(SqlNode node) {
       assert clauses.contains(Clause.WHERE);
       select.setWhere(node);

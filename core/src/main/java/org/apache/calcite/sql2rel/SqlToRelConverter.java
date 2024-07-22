@@ -40,17 +40,7 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelRoot;
 import org.apache.calcite.rel.RelShuttleImpl;
 import org.apache.calcite.rel.SingleRel;
-import org.apache.calcite.rel.core.Aggregate;
-import org.apache.calcite.rel.core.AggregateCall;
-import org.apache.calcite.rel.core.Collect;
-import org.apache.calcite.rel.core.CorrelationId;
-import org.apache.calcite.rel.core.Filter;
-import org.apache.calcite.rel.core.Join;
-import org.apache.calcite.rel.core.JoinInfo;
-import org.apache.calcite.rel.core.JoinRelType;
-import org.apache.calcite.rel.core.Project;
-import org.apache.calcite.rel.core.RelFactories;
-import org.apache.calcite.rel.core.Sort;
+import org.apache.calcite.rel.core.*;
 import org.apache.calcite.rel.hint.HintStrategyTable;
 import org.apache.calcite.rel.hint.Hintable;
 import org.apache.calcite.rel.hint.RelHint;
@@ -3614,10 +3604,20 @@ public class SqlToRelConverter {
         final RexNode zero = rexBuilder.makeExactLiteral(BigDecimal.ZERO);
         preExprs = PairList.of(zero, null);
       } else {
-        preExprs = aggConverter.convertedInputExprs;
+        if (bb.root != null && RelOptUtil.hasCalcViewHint(bb.root)) {
+          preExprs = aggConverter.convertedInputExprs;
+          final RelNode inputRel = bb.root();
+          bb.setRoot(
+              relBuilder.push(inputRel)
+                  .projectNamed(preExprs.leftList(), preExprs.rightList(), false)
+                  .build(),
+              false);
+        } else {
+          preExprs = aggConverter.convertedInputExprs;
+        }
       }
 
-      final RelNode inputRel = bb.root();
+        final RelNode inputRel = bb.root();
 
       // Project the expressions required by agg and having.
       RelNode intermediateProject = relBuilder.push(inputRel)
