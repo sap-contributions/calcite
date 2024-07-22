@@ -40,17 +40,7 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelRoot;
 import org.apache.calcite.rel.RelShuttleImpl;
 import org.apache.calcite.rel.SingleRel;
-import org.apache.calcite.rel.core.Aggregate;
-import org.apache.calcite.rel.core.AggregateCall;
-import org.apache.calcite.rel.core.Collect;
-import org.apache.calcite.rel.core.CorrelationId;
-import org.apache.calcite.rel.core.Filter;
-import org.apache.calcite.rel.core.Join;
-import org.apache.calcite.rel.core.JoinInfo;
-import org.apache.calcite.rel.core.JoinRelType;
-import org.apache.calcite.rel.core.Project;
-import org.apache.calcite.rel.core.RelFactories;
-import org.apache.calcite.rel.core.Sort;
+import org.apache.calcite.rel.core.*;
 import org.apache.calcite.rel.hint.HintStrategyTable;
 import org.apache.calcite.rel.hint.Hintable;
 import org.apache.calcite.rel.hint.RelHint;
@@ -3518,24 +3508,39 @@ public class SqlToRelConverter {
 
       // compute inputs to the aggregator
       final PairList<RexNode, @Nullable String> preExprs;
-      if (aggConverter.convertedInputExprs.isEmpty()) {
-        // Special case for COUNT(*), where we can end up with no inputs
-        // at all.  The rest of the system doesn't like 0-tuples, so we
-        // select a dummy constant here.
-        final RexNode zero = rexBuilder.makeExactLiteral(BigDecimal.ZERO);
-        preExprs = PairList.of(zero, null);
+      if (bb.root != null && RelOptUtil.hasCalcViewHint(bb.root)) {
+        if (!aggConverter.convertedInputExprs.isEmpty()) {
+          preExprs = aggConverter.convertedInputExprs;
+          final RelNode inputRel = bb.root();
+          bb.setRoot(
+              relBuilder.push(inputRel)
+                  .projectNamed(preExprs.leftList(), preExprs.rightList(), false)
+                  .build(),
+              false);
+        }
       } else {
-        preExprs = aggConverter.convertedInputExprs;
+        if (aggConverter.convertedInputExprs.isEmpty()) {
+          // Special case for COUNT(*), where we can end up with no inputs
+          // at all.  The rest of the system doesn't like 0-tuples, so we
+          // select a dummy constant here.
+          final RexNode zero = rexBuilder.makeExactLiteral(BigDecimal.ZERO);
+          preExprs = PairList.of(zero, null);
+        } else {
+          preExprs = aggConverter.convertedInputExprs;
+        }
+
+        final RelNode inputRel = bb.root();
+
+        // Project the expressions required by agg and having.
+        bb.setRoot(
+            relBuilder.push(inputRel)
+                .projectNamed(preExprs.leftList(), preExprs.rightList(), false)
+                .build(),
+            false);
       }
 
-      final RelNode inputRel = bb.root();
 
       // Project the expressions required by agg and having.
-      bb.setRoot(
-          relBuilder.push(inputRel)
-              .projectNamed(preExprs.leftList(), preExprs.rightList(), false)
-              .build(),
-          false);
       bb.mapRootRelToFieldProjection.put(bb.root(), r.groupExprProjection);
 
       // REVIEW jvs 31-Oct-2007:  doesn't the declaration of

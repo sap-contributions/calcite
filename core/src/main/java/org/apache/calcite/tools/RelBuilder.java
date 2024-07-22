@@ -2362,7 +2362,7 @@ public class RelBuilder {
       final ImmutableList<AggCallPlus> aggCalls) {
     if (groupKey.nodes.isEmpty()
         && aggCalls.isEmpty()
-        && config.pruneInputOfAggregate()) {
+        && !(stack.peek() != null && RelOptUtil.hasCalcViewHint(stack.peek().rel))) {
       // Query is "SELECT /* no fields */ FROM t GROUP BY ()", which always
       // returns one row with zero columns.
       if (config.preventEmptyFieldList()) {
@@ -2442,7 +2442,7 @@ public class RelBuilder {
     }
 
     return pruneAggregateInputFieldsAndDeduplicateAggCalls(r, groupSet, groupSets, aggregateCalls,
-        frame.fields, registrar.extraNodes);
+        frame.fields, registrar.extraNodes, RelOptUtil.hasCalcViewHint(r));
   }
 
   /**
@@ -2454,10 +2454,12 @@ public class RelBuilder {
       final ImmutableList<ImmutableBitSet> groupSets,
       final List<AggregateCall> aggregateCalls,
       PairList<ImmutableSet<String>, RelDataTypeField> inFields,
-      final List<RexNode> extraNodes) {
+      final List<RexNode> extraNodes,
+      boolean hasCalViewHint) {
     final ImmutableBitSet groupSetAfterPruning;
     final ImmutableList<ImmutableBitSet> groupSetsAfterPruning;
-    if (config.pruneInputOfAggregate()
+
+    if (!hasCalViewHint
         && r instanceof Project) {
       final Set<Integer> fieldsUsed =
           RelOptUtil.getAllFields2(groupSet, aggregateCalls);
@@ -2564,6 +2566,7 @@ public class RelBuilder {
     }
     return aggregateCall;
   }
+
 
   /** Returns whether an input is already unique, and therefore a Project
    * can be created instead of an Aggregate.
