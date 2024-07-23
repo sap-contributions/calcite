@@ -47,7 +47,7 @@ public class CachingLookup<T> implements Lookup<T> {
   public CachingLookup(Lookup<T> delegate){
     this.delegate = delegate;
     this.cache = CacheBuilder.newBuilder()
-        .expireAfterAccess(1, TimeUnit.HOURS)
+        .expireAfterWrite(1, TimeUnit.MINUTES)
         .build(new CacheLoader<String, T>() {
           @Override
           public T load(String name) throws Exception {
@@ -55,7 +55,7 @@ public class CachingLookup<T> implements Lookup<T> {
           }
         });
     this.cacheIgnoreCase = CacheBuilder.newBuilder()
-        .expireAfterAccess(1, TimeUnit.HOURS)
+        .expireAfterWrite(1, TimeUnit.MINUTES)
         .build(new CacheLoader<String, Named<T>>() {
           @Override
           public Named<T> load(String name) throws Exception {
