@@ -27,7 +27,6 @@ import org.apache.calcite.rel.type.RelDataTypeImpl;
 import org.apache.calcite.rel.type.RelDataTypeSystem;
 import org.apache.calcite.rel.type.RelProtoDataType;
 import org.apache.calcite.schema.*;
-import org.apache.calcite.schema.lookup.CachingLookup;
 import org.apache.calcite.schema.lookup.IgnoreCaseLookup;
 import org.apache.calcite.schema.lookup.LikePattern;
 import org.apache.calcite.schema.lookup.Lookup;
@@ -88,7 +87,7 @@ public class JdbcSchema implements Schema, Wrapper {
   final @Nullable String schema;
   public final SqlDialect dialect;
   final JdbcConvention convention;
-  private final Lookup<Table> tables = new CachingLookup<Table>(new IgnoreCaseLookup<Table>() {
+  private final Lookup<Table> tables = new IgnoreCaseLookup<Table>() {
     @Override
     public @Nullable Table get(String name) {
       try (Stream<MetaImpl.MetaTable> s = getMetaTableStream(name)) {
@@ -102,7 +101,7 @@ public class JdbcSchema implements Schema, Wrapper {
         return s.map(it -> it.tableName).collect(Collectors.toSet());
       }
     }
-  });
+  };
   private final Lookup<JdbcSchema> subSchemas = Lookup.empty();
 
   @Experimental
