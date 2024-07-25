@@ -28,7 +28,6 @@ import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.schema.Schemas;
 import org.apache.calcite.schema.Wrapper;
 import org.apache.calcite.schema.impl.AbstractSchema;
-import org.apache.calcite.schema.lookup.CachingLookup;
 import org.apache.calcite.schema.lookup.IgnoreCaseLookup;
 import org.apache.calcite.sql.SqlDialect;
 import org.apache.calcite.sql.SqlDialectFactory;
@@ -80,7 +79,7 @@ public class JdbcCatalogSchema extends AbstractSchema implements Wrapper {
     this.dialect = requireNonNull(dialect, "dialect");
     this.convention = requireNonNull(convention, "convention");
     this.catalog = catalog;
-    this.subSchemas = new CachingLookup<>(new IgnoreCaseLookup<JdbcSchema>() {
+    this.subSchemas = new IgnoreCaseLookup<JdbcSchema>() {
       @Override
       public @Nullable JdbcSchema get(String name) {
         try (Connection connection = dataSource.getConnection();
@@ -114,7 +113,7 @@ public class JdbcCatalogSchema extends AbstractSchema implements Wrapper {
         }
         return builder.build();
       }
-    });
+    };
   }
 
   public static JdbcCatalogSchema create(
