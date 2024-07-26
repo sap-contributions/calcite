@@ -436,7 +436,7 @@ public class EnumerableMergeJoin extends Join implements EnumerableRel {
     BlockBuilder builder = new BlockBuilder();
     final Result leftResult =
         implementor.visitChild(this, 0, (EnumerableRel) left, pref);
-    final Expression leftExpression =
+    Expression leftExpression =
         builder.append("left", leftResult.block);
     final ParameterExpression left_ =
         Expressions.parameter(leftResult.physType.getJavaRowType(), "left");
@@ -494,19 +494,21 @@ public class EnumerableMergeJoin extends Join implements EnumerableRel {
     }
     final RelCollation collation = RelCollations.of(fieldCollations);
     final Expression comparator = leftKeyPhysType.generateMergeJoinComparator(collation);
-
+    if (joinType == JoinRelType.INNER || joinType == JoinRelType.SEMI) {
+     leftExpression = Expressions.call(BuiltInMethod.MERGE_JOIN_NOT_NULL_ENUMERABLE.method, leftExpression,
+          Expressions.lambda(
+              leftKeyPhysType.record(leftExpressions), left_));
+    }
     return implementor.result(
         physType,
         builder.append(
             Expressions.call(
                 BuiltInMethod.MERGE_JOIN.method,
                 Expressions.list(
-                    Expressions.call(BuiltInMethod.MERGE_JOIN_NOT_NULL_ENUMERABLE.method, leftExpression,
-                        Expressions.lambda(
-                            leftKeyPhysType.record(leftExpressions), left_)),
+                    leftExpression,
                     Expressions.call(BuiltInMethod.MERGE_JOIN_NOT_NULL_ENUMERABLE.method, rightExpression,
                         Expressions.lambda(
-                          rightKeyPhysType.record(rightExpressions), right_)),
+                            rightKeyPhysType.record(rightExpressions), right_)),
                     Expressions.lambda(
                         leftKeyPhysType.record(leftExpressions), left_),
                     Expressions.lambda(
