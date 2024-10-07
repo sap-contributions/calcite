@@ -5400,6 +5400,21 @@ public class SqlFunctions {
     return timeFrameSet.addDate(date, interval, timeFrame);
   }
 
+  /** SQL {@code DATEADD} function applied to a custom time frame.
+   *
+   * <p>Custom time frames are created as part of a {@link TimeFrameSet}.
+   * This method retrieves the session's time frame set from the
+   * {@link DataContext.Variable#TIME_FRAME_SET} variable, then looks up the
+   * time frame by name. */
+  public static int customDateAdd(DataContext root,
+      TimeUnitRange timeFrameName, int interval, int date) {
+    final TimeFrameSet timeFrameSet =
+        requireNonNull(DataContext.Variable.TIME_FRAME_SET.get(root));
+    final TimeFrame timeFrame = timeFrameSet.get(timeFrameName.startUnit);
+    return timeFrameSet.addDate(date, interval, timeFrame);
+  }
+
+
   /** SQL {@code TIMESTAMPADD} function applied to a custom time frame.
    *
    * <p>Custom time frames are created and accessed as described in
@@ -5411,6 +5426,19 @@ public class SqlFunctions {
     final TimeFrame timeFrame = timeFrameSet.get(timeFrameName);
     return timeFrameSet.addTimestamp(timestamp, interval, timeFrame);
   }
+
+  /** SQL {@code TIMESTAMPADD} function applied to a custom time frame.
+   *
+   * <p>Custom time frames are created and accessed as described in
+   * {@link #customDateAdd}. */
+  public static long customTimestampAdd(DataContext root,
+      TimeUnitRange timeFrameName, long interval, long timestamp) {
+    final TimeFrameSet timeFrameSet =
+        requireNonNull(DataContext.Variable.TIME_FRAME_SET.get(root));
+    final TimeFrame timeFrame = timeFrameSet.get(timeFrameName.startUnit);
+    return timeFrameSet.addTimestamp(timestamp, interval, timeFrame);
+  }
+
 
   /** SQL {@code DATEDIFF} function applied to a custom time frame.
    *
