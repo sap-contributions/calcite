@@ -629,7 +629,14 @@ public class RelToSqlConverter extends SqlImplementor
       }
 
       if (!isStar) {
-        builder.setFrom(oldSelect.clone(oldSelect.getParserPosition()));
+        SqlNode newNode =  oldSelect.clone(oldSelect.getParserPosition());
+        if ( oldSelect.getWhere() != null) builder.setWhere(null);
+        if ( oldSelect.getHaving() != null) builder.setHaving(null);
+        if ( oldSelect.getGroup() != null) builder.setGroupBy(null);
+        if ( oldSelect.getFetch() != null) builder.setFetch(null);
+        if ( oldSelect.getOffset() != null) builder.setOffset(null);
+        if ( oldSelect.getOrderList() != null) builder.setOrderBy(null);
+        builder.setFrom(newNode);
       }
     }
 
