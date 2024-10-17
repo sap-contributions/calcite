@@ -158,24 +158,6 @@ public abstract class BuiltInMetadata {
     }
   }
   /** Metadata about whether fields are trimmable within a relation. */
-  public interface FieldsTrimmable extends Metadata {
-    MetadataDef<FieldsTrimmable> DEF =
-        MetadataDef.of(FieldsTrimmable.class, FieldsTrimmable.Handler.class,
-            BuiltInMethod.FIELDS_TRIMMABLE.method);
-
-    Boolean areFieldsTrimmable(RelNode parent);
-
-    /** Handler API. */
-    @FunctionalInterface
-    interface Handler extends MetadataHandler<FieldsTrimmable> {
-      Boolean areFieldsTrimmable(RelNode rel, RelMetadataQuery mq, RelNode parent);
-
-      @Override default MetadataDef<FieldsTrimmable> getDef() {
-        return DEF;
-      }
-    }
-  }
-
 
   /** Metadata about which columns are sorted. */
   public interface Collation extends Metadata {
