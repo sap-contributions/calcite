@@ -120,6 +120,7 @@ public class RelFieldTrimmer implements ReflectiveVisitor {
   private final ReflectUtil.MethodDispatcher<TrimResult> trimFieldsDispatcher;
   private final RelBuilder relBuilder;
   private boolean withinDistinctAggregation = false;
+  private boolean withinCountStarAggregation = false;
 
   //~ Constructors -----------------------------------------------------------
 
@@ -201,42 +202,39 @@ public class RelFieldTrimmer implements ReflectiveVisitor {
       final ImmutableBitSet fieldsUsed,
       Set<RelDataTypeField> extraFields) {
 
-    ImmutableBitSet childFieldsUsed;
-    final RelMetadataQuery mq = input.getCluster().getMetadataQuery();
-    if ( !mq.areFieldsTrimmable(input, rel)) {
-      childFieldsUsed = ImmutableBitSet.range(input.getRowType().getFieldCount());
-    } else {
-      final ImmutableBitSet.Builder fieldsUsedBuilder = fieldsUsed.rebuild();
+    if ( withinCountStarAggregation && rel instanceof Aggregate && RelOptUtil.hasCalcViewHint(rel)) {
+      return new TrimResult(input,Mappings.createIdentity(input.getRowType().getFieldCount()));
+    }
+    final ImmutableBitSet.Builder fieldsUsedBuilder = fieldsUsed.rebuild();
 
-      // Fields that define the collation cannot be discarded.
-      final ImmutableList<RelCollation> collations = mq.collations(input);
-      if (collations != null) {
-        for (RelCollation collation : collations) {
-          for (RelFieldCollation fieldCollation : collation.getFieldCollations()) {
-            fieldsUsedBuilder.set(fieldCollation.getFieldIndex());
-          }
+    // Fields that define the collation cannot be discarded.
+    final RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
+    final ImmutableList<RelCollation> collations = mq.collations(input);
+    if (collations != null) {
+      for (RelCollation collation : collations) {
+        for (RelFieldCollation fieldCollation : collation.getFieldCollations()) {
+          fieldsUsedBuilder.set(fieldCollation.getFieldIndex());
         }
       }
-
-      // Correlating variables are a means for other relational expressions to use
-      // fields.
-      for (final CorrelationId correlation : rel.getVariablesSet()) {
-        rel.accept(
-            new CorrelationReferenceFinder() {
-              @Override
-              protected RexNode handle(RexFieldAccess fieldAccess) {
-                final RexCorrelVariable v =
-                    (RexCorrelVariable) fieldAccess.getReferenceExpr();
-                if (v.id.equals(correlation)) {
-                  fieldsUsedBuilder.set(fieldAccess.getField().getIndex());
-                }
-                return fieldAccess;
-              }
-            });
-      }
-      childFieldsUsed = fieldsUsedBuilder.build();
     }
-    return dispatchTrimFields(input, childFieldsUsed, extraFields);
+
+    // Correlating variables are a means for other relational expressions to use
+    // fields.
+    for (final CorrelationId correlation : rel.getVariablesSet()) {
+      rel.accept(
+          new CorrelationReferenceFinder() {
+            @Override protected RexNode handle(RexFieldAccess fieldAccess) {
+              final RexCorrelVariable v =
+                  (RexCorrelVariable) fieldAccess.getReferenceExpr();
+              if (v.id.equals(correlation)) {
+                fieldsUsedBuilder.set(fieldAccess.getField().getIndex());
+              }
+              return fieldAccess;
+            }
+          });
+    }
+
+    return dispatchTrimFields(input, fieldsUsedBuilder.build(), extraFields);
   }
 
   /**
@@ -1072,6 +1070,7 @@ public class RelFieldTrimmer implements ReflectiveVisitor {
 
     final RelDataType rowType = aggregate.getRowType();
     boolean distinctAggregation = true;
+    boolean countStarAggregation = false;
 
     // Compute which input fields are used.
     // 1. group fields are always used
@@ -1086,19 +1085,23 @@ public class RelFieldTrimmer implements ReflectiveVisitor {
       if (aggCall.distinctKeys != null) {
         inputFieldsUsed.addAll(aggCall.distinctKeys);
       }
+      countStarAggregation = countStarAggregation || aggCall.getAggregation().kind == SqlKind.COUNT;
       distinctAggregation = distinctAggregation && aggCall.isDistinct();
       inputFieldsUsed.addAll(RelCollations.ordinals(aggCall.collation));
     }
     final TrimResult trimResult;
     final RelNode input = aggregate.getInput();
     boolean savedDistinctAggregation = withinDistinctAggregation;
+    boolean savedCountStarAggregation = withinCountStarAggregation;
     try {
       withinDistinctAggregation = distinctAggregation;
+      withinCountStarAggregation = countStarAggregation;
       // Create input with trimmed columns.
       final Set<RelDataTypeField> inputExtraFields = Collections.emptySet();
       trimResult = trimChild(aggregate, input, inputFieldsUsed.build(), inputExtraFields);
     } finally {
       withinDistinctAggregation = savedDistinctAggregation;
+      withinCountStarAggregation = savedCountStarAggregation;
     }
     final RelNode newInput = trimResult.left;
     final Mapping inputMapping = trimResult.right;

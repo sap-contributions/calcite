@@ -208,7 +208,7 @@ class LatticeTest {
           final SchemaPlus schema = c.getRootSchema();
           final SchemaPlus adhoc =
               requireNonNull(schema.subSchemas().get("adhoc"));
-          assertThat(adhoc.getTableNames().contains("EMPLOYEES"), is(true));
+          assertThat(adhoc.tables().get("EMPLOYEES") != null, is(true));
           final CalciteSchema adhocSchema =
               requireNonNull(adhoc.unwrap(CalciteSchema.class));
           final Map.Entry<String, CalciteSchema.LatticeEntry> entry =
@@ -239,8 +239,8 @@ class LatticeTest {
         .doWithConnection(c -> {
           final SchemaPlus schema = c.getRootSchema();
           final SchemaPlus adhoc =
-              requireNonNull(schema.getSubSchema("adhoc"));
-          assertThat(adhoc.getTableNames().contains("EMPLOYEES"), is(true));
+              requireNonNull(schema.subSchemas().get("adhoc"));
+          assertThat(adhoc.tables().get("EMPLOYEES") != null, is(true));
           final CalciteSchema adhocSchema =
               requireNonNull(adhoc.unwrap(CalciteSchema.class));
           final Map.Entry<String, CalciteSchema.LatticeEntry> entry =
@@ -271,7 +271,7 @@ class LatticeTest {
           final SchemaPlus schema = c.getRootSchema();
           final SchemaPlus adhoc =
               requireNonNull(schema.subSchemas().get("adhoc"));
-          assertThat(adhoc.getTableNames().contains("EMPLOYEES"), is(true));
+          assertThat(adhoc.tables().get("EMPLOYEES") != null, is(true));
           final CalciteSchema adhocSchema =
               requireNonNull(adhoc.unwrap(CalciteSchema.class));
           final Map.Entry<String, CalciteSchema.LatticeEntry> entry =

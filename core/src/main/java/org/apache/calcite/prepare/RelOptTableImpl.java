@@ -506,7 +506,7 @@ public class RelOptTableImpl extends Prepare.AbstractPreparingTable {
     }
 
     @Deprecated @Override public @Nullable Table getTable(String name) {
-      return schema.getTable(name);
+      return tables().get(name);
     }
 
     @Deprecated @Override public Set<String> getTableNames() {

@@ -88,7 +88,6 @@ public class RelMetadataQuery extends RelMetadataQueryBase {
   private BuiltInMetadata.ExpressionLineage.Handler expressionLineageHandler;
   private BuiltInMetadata.TableReferences.Handler tableReferencesHandler;
   private BuiltInMetadata.ColumnUniqueness.Handler columnUniquenessHandler;
-  private BuiltInMetadata.FieldsTrimmable.Handler fieldsTrimmableHandler;
   private BuiltInMetadata.CumulativeCost.Handler cumulativeCostHandler;
   private BuiltInMetadata.DistinctRowCount.Handler distinctRowCountHandler;
   private BuiltInMetadata.Distribution.Handler distributionHandler;
@@ -131,7 +130,6 @@ public class RelMetadataQuery extends RelMetadataQueryBase {
         provider.handler(BuiltInMetadata.ExpressionLineage.Handler.class);
     this.tableReferencesHandler = provider.handler(BuiltInMetadata.TableReferences.Handler.class);
     this.columnUniquenessHandler = provider.handler(BuiltInMetadata.ColumnUniqueness.Handler.class);
-    this.fieldsTrimmableHandler = provider.handler(BuiltInMetadata.FieldsTrimmable.Handler.class);
     this.cumulativeCostHandler = provider.handler(BuiltInMetadata.CumulativeCost.Handler.class);
     this.distinctRowCountHandler = provider.handler(BuiltInMetadata.DistinctRowCount.Handler.class);
     this.distributionHandler = provider.handler(BuiltInMetadata.Distribution.Handler.class);
@@ -168,7 +166,6 @@ public class RelMetadataQuery extends RelMetadataQueryBase {
     this.expressionLineageHandler = initialHandler(BuiltInMetadata.ExpressionLineage.Handler.class);
     this.tableReferencesHandler = initialHandler(BuiltInMetadata.TableReferences.Handler.class);
     this.columnUniquenessHandler = initialHandler(BuiltInMetadata.ColumnUniqueness.Handler.class);
-    this.fieldsTrimmableHandler = initialHandler(BuiltInMetadata.FieldsTrimmable.Handler.class);
     this.cumulativeCostHandler = initialHandler(BuiltInMetadata.CumulativeCost.Handler.class);
     this.distinctRowCountHandler = initialHandler(BuiltInMetadata.DistinctRowCount.Handler.class);
     this.distributionHandler = initialHandler(BuiltInMetadata.Distribution.Handler.class);
@@ -201,7 +198,6 @@ public class RelMetadataQuery extends RelMetadataQueryBase {
     this.expressionLineageHandler = prototype.expressionLineageHandler;
     this.tableReferencesHandler = prototype.tableReferencesHandler;
     this.columnUniquenessHandler = prototype.columnUniquenessHandler;
-    this.fieldsTrimmableHandler = prototype.fieldsTrimmableHandler;
     this.cumulativeCostHandler = prototype.cumulativeCostHandler;
     this.distinctRowCountHandler = prototype.distinctRowCountHandler;
     this.distributionHandler = prototype.distributionHandler;
@@ -593,25 +589,6 @@ public class RelMetadataQuery extends RelMetadataQueryBase {
             ignoreNulls);
       } catch (MetadataHandlerProvider.NoHandler e) {
         columnUniquenessHandler = revise(BuiltInMetadata.ColumnUniqueness.Handler.class);
-      }
-    }
-  }
-
-  /**
-   * Returns the
-   * {@link BuiltInMetadata.FieldsTrimmable#areFieldsTrimmable(RelNode parent)}
-   * statistic.
-   *
-   * @param rel         the relational expression
-   * @return true or false depending on whether the columns are unique, or
-   * null if not enough information is available to make that determination
-   */
-  public @Nullable Boolean areFieldsTrimmable(RelNode rel, RelNode parent) {
-    for (;;) {
-      try {
-        return fieldsTrimmableHandler.areFieldsTrimmable(rel, this, parent);
-      } catch (MetadataHandlerProvider.NoHandler e) {
-        fieldsTrimmableHandler = revise(BuiltInMetadata.FieldsTrimmable.Handler.class);
       }
     }
   }

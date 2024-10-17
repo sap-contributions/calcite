@@ -1220,7 +1220,6 @@ public class JdbcTest {
     final CalciteConnection calciteConnection =
         connection.unwrap(CalciteConnection.class);
     final SchemaPlus rootSchema = calciteConnection.getRootSchema();
-<<<<<<< HEAD
     final SchemaPlus foodmart = rootSchema.subSchemas().get("foodmart");
     assertThat(foodmart, notNullValue());
     final JdbcTable timeByDay =
@@ -8762,14 +8761,8 @@ public class JdbcTest {
       super(dataSource, dialect, convention, catalog, schema);
     }
 
-<<<<<<< HEAD
     public final Table customer =
-        requireNonNull(getTable("customer"));
-||||||| parent of c54b3c271 (EXPB-2551 Speed up schema lookup for huge schemas)
-    public final Table customer = getTable("customer");
-=======
-    public final Table customer = tables().get("customer");
->>>>>>> c54b3c271 (EXPB-2551 Speed up schema lookup for huge schemas)
+        requireNonNull(tables().get("customer"));
   }
 
   public static class Customer {

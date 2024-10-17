@@ -16,7 +16,7 @@
 # limitations under the License.
 #
 set -e
-VERSION=1.37.0
+VERSION=1.38.0
 
 # Java 21 doesn't suppport Java 8
 if [ -d /Library/Java/JavaVirtualMachines/sapmachine-jdk-17.0.11.jdk/Contents/Home ]; then
