@@ -421,13 +421,18 @@ public class JdbcSchema implements Schema, Wrapper {
       final String columnName = requireNonNull(resultSet.getString(4), "columnName");
       final int dataType = resultSet.getInt(5);
       final String typeString = resultSet.getString(6);
-      final int precision;
+      int precision;
       final int scale;
       switch (SqlType.valueOf(dataType)) {
       case TIMESTAMP:
       case TIME:
         precision = resultSet.getInt(9); // SCALE
         scale = 0;
+        break;
+      case NUMERIC:
+        precision = resultSet.getInt(7); // SIZE
+        scale = resultSet.getInt(9); // SCALE
+        if ( precision == 0 ) precision = 19;
         break;
       default:
         precision = resultSet.getInt(7); // SIZE

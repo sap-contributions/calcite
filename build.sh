@@ -19,20 +19,19 @@ set -e
 VERSION=1.38.0
 
 # Java 21 doesn't suppport Java 8
-if [ -d /Library/Java/JavaVirtualMachines/sapmachine-jdk-17.0.11.jdk/Contents/Home ]; then
-  export JAVA_HOME=/Library/Java/JavaVirtualMachines/sapmachine-jdk-17.0.11.jdk/Contents/Home
-  export PATH=$JAVA_HOME/bin:$PATH
-fi
+#if [ -d /Library/Java/JavaVirtualMachines/sapmachine-jdk-17.0.11.jdk/Contents/Home ]; then
+#  export JAVA_HOME=/Library/Java/JavaVirtualMachines/sapmachine-jdk-17.0.11.jdk/Contents/Home
+#  export PATH=$JAVA_HOME/bin:$PATH
+#fi
 
-if [ -d /Library/Java/JavaVirtualMachines/sapmachine-17.jdk/Contents/Home ]; then
-  export JAVA_HOME=/Library/Java/JavaVirtualMachines/sapmachine-17.jdk/Contents/Home
-  export PATH=$JAVA_HOME/bin:$PATH
-fi
+#if [ -d /Library/Java/JavaVirtualMachines/sapmachine-17.jdk/Contents/Home ]; then
+#  export JAVA_HOME=/Library/Java/JavaVirtualMachines/sapmachine-17.jdk/Contents/Home
+#  export PATH=$JAVA_HOME/bin:$PATH
+#fi
 
-./gradlew clean publishToMavenLocal
-
-for module in core linq4j;
+for module in linq4j core;
 do
+  ./gradlew :${module}:clean :${module}:publishToMavenLocal
    mvn install:install-file \
       -Dfile=${module}/build/libs/calcite-${module}-$VERSION-SNAPSHOT.jar \
       -DgroupId=org.apache.calcite \
