@@ -1791,7 +1791,7 @@ public abstract class SqlImplementor {
             case AS:
               final SqlCall asCall = (SqlCall) selectItem;
               SqlNode alias = asCall.operand(1);
-              if (aliasRef && !SqlUtil.isGeneratedAlias(((SqlIdentifier) alias).getSimple())) {
+              if ((aliasRef && !SqlUtil.isGeneratedAlias(((SqlIdentifier) alias).getSimple())) || RelOptUtil.hasCalcViewHint(rel)) {
                 // For BigQuery, given the query
                 //   SELECT SUM(x) AS x FROM t HAVING(SUM(t.x) > 0)
                 // we can generate
