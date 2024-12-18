@@ -14,11 +14,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.calcite.schema.lookup;
 
 /**
- * Exceptions used in caches to signal none existing entries
+ * Exceptions used in caches to signal none existing entries.
  */
-class EntryNotFoundException extends RuntimeException{
+class EntryNotFoundException extends RuntimeException {
 }

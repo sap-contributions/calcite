@@ -14,39 +14,41 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.calcite.schema.lookup;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.Set;
 import java.util.function.BiFunction;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
-class MappedLookup<S,T> implements Lookup<T> {
+/**
+ * A Lookup class which can be used to map different element types.
+ *
+ * @param <S> Source element type
+ * @param <T> Target element type
+ */
+class MappedLookup<S, T> implements Lookup<T> {
   private final Lookup<S> lookup;
-  private final BiFunction<S,String,T>  mapper;
+  private final BiFunction<S, String, T> mapper;
 
-  MappedLookup(Lookup<S> lookup, BiFunction<S,String,T> mapper) {
+  MappedLookup(Lookup<S> lookup, BiFunction<S, String, T> mapper) {
     this.lookup = lookup;
     this.mapper = mapper;
   }
-  @Override
-  public @Nullable T get(String name) {
+
+  @Override public @Nullable T get(String name) {
     S entity = lookup.get(name);
-    return entity == null ? null : mapper.apply(entity,name);
+    return entity == null ? null : mapper.apply(entity, name);
   }
 
-  @Override
-  public @Nullable Named<T> getIgnoreCase(String name) {
+  @Override public @Nullable Named<T> getIgnoreCase(String name) {
     Named<S> named = lookup.getIgnoreCase(name);
-    return named == null ? null : new Named<>(named.name(),mapper.apply(named.entity(),named.name()));
+    return named == null
+        ? null
+        : new Named<>(named.name(), mapper.apply(named.entity(), named.name()));
   }
 
-  @Override
-  public @Nullable Set<String> getNames(LikePattern pattern) {
+  @Override public @Nullable Set<String> getNames(LikePattern pattern) {
     return lookup.getNames(pattern);
   }
 }

@@ -67,11 +67,11 @@ public class DelegatingSchema implements Schema {
     return schema.tables();
   }
 
-  @Deprecated @Override public @Nullable Table getTable(String name) {
+  @Override public @Nullable Table getTable(String name) {
     return schema.tables().get(name);
   }
 
-  @Deprecated @Override public Set<String> getTableNames() {
+  @Override public Set<String> getTableNames() {
     return schema.tables().getNames(LikePattern.any());
   }
 
@@ -95,11 +95,11 @@ public class DelegatingSchema implements Schema {
     return schema.subSchemas();
   }
 
-  @Deprecated @Override public @Nullable Schema getSubSchema(String name) {
+  @Override public @Nullable Schema getSubSchema(String name) {
     return subSchemas().get(name);
   }
 
-  @Deprecated @Override public Set<String> getSubSchemaNames() {
+  @Override public Set<String> getSubSchemaNames() {
     return subSchemas().getNames(LikePattern.any());
   }
 }
