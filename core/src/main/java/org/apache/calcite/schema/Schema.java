@@ -18,9 +18,7 @@ package org.apache.calcite.schema;
 
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.rel.type.RelProtoDataType;
-
-import org.apache.calcite.schema.lookup.SimpleLookup;
-
+import org.apache.calcite.schema.lookup.CompatibilityLookup;
 import org.apache.calcite.schema.lookup.LikePattern;
 import org.apache.calcite.schema.lookup.Lookup;
 
@@ -63,38 +61,40 @@ import java.util.Set;
 public interface Schema {
 
   /**
-   * Returns a lookup object to find tables
+   * Returns a lookup object to find tables.
    *
    * @return Lookup
    */
   default Lookup<Table> tables() {
-    return new SimpleLookup<Table>(this::getTable, this::getTableNames);
+    return new CompatibilityLookup<>(this::getTable, this::getTableNames);
   }
 
+  /**
+   * Returns a lookup object to find sub schemas.
+   *
+   * @return Lookup
+   */
   default Lookup<? extends Schema> subSchemas() {
-    return new SimpleLookup<Schema>(this::getSubSchema, this::getSubSchemaNames);
+    return new CompatibilityLookup<>(this::getSubSchema, this::getSubSchemaNames);
   }
 
   /**
    * Returns a table with a given name, or null if not found.
    *
-   * @deprecated
-   * Please use {@link Schema#tables()} and {@link Lookup#get(String)} instead.
+   * <p>Please use {@link Schema#tables()} and {@link Lookup#get(String)} instead.
    *
    * @param name Table name
    * @return Table, or null
    */
-  @Deprecated
-  @Nullable  Table getTable(String name) ;
+  @Nullable Table getTable(String name);
 
   /**
    * Returns the names of the tables in this schema.
    *
-   * @deprecated
-   * Please use {@link Schema#tables()} and {@link Lookup#getNames(LikePattern)} instead.
+   * <p>Please use {@link Schema#tables()} and {@link Lookup#getNames(LikePattern)} instead.
+   *
    * @return Names of the tables in this schema
    */
-  @Deprecated
   Set<String> getTableNames();
 
   /**
@@ -131,22 +131,20 @@ public interface Schema {
   /**
    * Returns a sub-schema with a given name, or null.
    *
+   * <p>Please use {@link Schema#subSchemas()} and {@link Lookup#get(String)} instead.
+   *
    * @param name Sub-schema name
-   * @deprecated
-   * Please use {@link Schema#subSchemas()} ()} and {@link Lookup#get(String)} instead.
    * @return Sub-schema with a given name, or null
    */
-  @Deprecated
   @Nullable Schema getSubSchema(String name);
 
   /**
    * Returns the names of this schema's child schemas.
    *
-   * @deprecated
-   * Please use {@link Schema#subSchemas()} ()} and {@link Lookup#getNames(LikePattern)} instead.
+   * <p>Please use {@link Schema#subSchemas()} and {@link Lookup#getNames(LikePattern)} instead.
+   *
    * @return Names of this schema's child schemas
    */
-  @Deprecated
   Set<String> getSubSchemaNames();
 
   /**

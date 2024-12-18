@@ -19,12 +19,12 @@ package org.apache.calcite.schema.impl;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.rel.type.RelProtoDataType;
 import org.apache.calcite.schema.Function;
-import org.apache.calcite.schema.lookup.LikePattern;
-import org.apache.calcite.schema.lookup.Lookup;
 import org.apache.calcite.schema.Schema;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.schema.SchemaVersion;
 import org.apache.calcite.schema.Table;
+import org.apache.calcite.schema.lookup.LikePattern;
+import org.apache.calcite.schema.lookup.Lookup;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -67,11 +67,11 @@ public class DelegatingSchema implements Schema {
     return schema.tables();
   }
 
-  @Deprecated @Override public @Nullable Table getTable(String name) {
+  @Override public @Nullable Table getTable(String name) {
     return schema.tables().get(name);
   }
 
-  @Deprecated @Override public Set<String> getTableNames() {
+  @Override public Set<String> getTableNames() {
     return schema.tables().getNames(LikePattern.any());
   }
 
@@ -95,11 +95,11 @@ public class DelegatingSchema implements Schema {
     return schema.subSchemas();
   }
 
-  @Deprecated @Override public @Nullable Schema getSubSchema(String name) {
+  @Override public @Nullable Schema getSubSchema(String name) {
     return subSchemas().get(name);
   }
 
-  @Deprecated @Override public Set<String> getSubSchemaNames() {
+  @Override public Set<String> getSubSchemaNames() {
     return subSchemas().getNames(LikePattern.any());
   }
 }

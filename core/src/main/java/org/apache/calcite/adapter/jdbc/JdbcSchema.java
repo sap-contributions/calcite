@@ -26,7 +26,13 @@ import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rel.type.RelDataTypeImpl;
 import org.apache.calcite.rel.type.RelDataTypeSystem;
 import org.apache.calcite.rel.type.RelProtoDataType;
-import org.apache.calcite.schema.*;
+import org.apache.calcite.schema.Schema;
+import org.apache.calcite.schema.SchemaFactory;
+import org.apache.calcite.schema.SchemaPlus;
+import org.apache.calcite.schema.SchemaVersion;
+import org.apache.calcite.schema.Schemas;
+import org.apache.calcite.schema.Table;
+import org.apache.calcite.schema.Wrapper;
 import org.apache.calcite.schema.lookup.IgnoreCaseLookup;
 import org.apache.calcite.schema.lookup.LikePattern;
 import org.apache.calcite.schema.lookup.Lookup;
@@ -39,9 +45,6 @@ import org.apache.calcite.util.Pair;
 import org.apache.calcite.util.Util;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableMultimap;
-import com.google.common.collect.Multimap;
 import com.google.common.collect.Ordering;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -54,7 +57,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -78,27 +80,23 @@ import static java.util.Objects.requireNonNull;
  * queries against this schema are executed against those tables, pushing down
  * as much as possible of the query logic to SQL.
  */
-public class JdbcSchema implements Schema, Wrapper {
+public class JdbcSchema extends JdbcBaseSchema implements Schema, Wrapper {
   private static final Logger LOGGER = LoggerFactory.getLogger(JdbcSchema.class);
-  public class TableNotFoundException extends RuntimeException {
 
-  }
   final DataSource dataSource;
   final @Nullable String catalog;
   final @Nullable String schema;
   public final SqlDialect dialect;
   final JdbcConvention convention;
   private final Lookup<Table> tables = new IgnoreCaseLookup<Table>() {
-    @Override
-    public @Nullable Table get(String name) {
+    @Override public @Nullable Table get(String name) {
       try (Stream<MetaImpl.MetaTable> s = getMetaTableStream(name)) {
-        return s.findFirst().map(it -> jdbcTableMapper(it) ).orElse(null);
+        return s.findFirst().map(it -> jdbcTableMapper(it)).orElse(null);
       }
     }
 
-    @Override
-    public Set<String> getNames(LikePattern pattern) {
-      try( Stream<MetaImpl.MetaTable> s = getMetaTableStream(pattern.pattern)) {
+    @Override public Set<String> getNames(LikePattern pattern) {
+      try (Stream<MetaImpl.MetaTable> s = getMetaTableStream(pattern.pattern)) {
         return s.map(it -> it.tableName).collect(Collectors.toSet());
       }
     }
@@ -254,19 +252,6 @@ public class JdbcSchema implements Schema, Wrapper {
     return Schemas.subSchemaExpression(parentSchema, name, JdbcSchema.class);
   }
 
-  protected Multimap<String, Function> getFunctions() {
-    // TODO: populate map from JDBC metadata
-    return ImmutableMultimap.of();
-  }
-
-  @Override public final Collection<Function> getFunctions(String name) {
-    return getFunctions().get(name); // never null
-  }
-
-  @Override public final Set<String> getFunctionNames() {
-    return getFunctions().keySet();
-  }
-
   private Stream<MetaImpl.MetaTable> getMetaTableStream(String tableNamePattern) {
     final Pair<@Nullable String, @Nullable String> catalogSchema = getCatalogSchema();
     final Stream<MetaImpl.MetaTable> tableDefs;
@@ -276,7 +261,8 @@ public class JdbcSchema implements Schema, Wrapper {
       connection = dataSource.getConnection();
       final List<MetaImpl.MetaTable> tableDefList = new ArrayList<>();
       final DatabaseMetaData metaData = connection.getMetaData();
-      resultSet = metaData.getTables(catalogSchema.left, catalogSchema.right, tableNamePattern, null);
+      resultSet =
+          metaData.getTables(catalogSchema.left, catalogSchema.right, tableNamePattern, null);
       tableDefs = asStream(connection, resultSet)
           .map(JdbcSchema::metaDataMapper);
     } catch (SQLException e) {
@@ -288,35 +274,36 @@ public class JdbcSchema implements Schema, Wrapper {
   }
 
   private static Stream<ResultSet> asStream(Connection connection, ResultSet resultSet) {
-    return StreamSupport.stream(new Spliterators.AbstractSpliterator<ResultSet>(
-        Long.MAX_VALUE, Spliterator.ORDERED) {
-      @Override
-      public boolean tryAdvance(Consumer<? super ResultSet> action) {
-        try {
-          if(!resultSet.next()) return false;
-          action.accept(resultSet);
-          return true;
-        } catch(SQLException ex) {
-          throw new RuntimeException(ex);
-        }
-      }
-    }, false).onClose(() -> {
-      close(connection, null, resultSet);
-    }) ;
+    return StreamSupport.stream(
+        new Spliterators.AbstractSpliterator<ResultSet>(
+            Long.MAX_VALUE, Spliterator.ORDERED) {
+          @Override public boolean tryAdvance(Consumer<? super ResultSet> action) {
+            try {
+              if (!resultSet.next()) {
+                return false;
+              }
+              action.accept(resultSet);
+              return true;
+            } catch (SQLException ex) {
+              throw new RuntimeException(ex);
+            }
+          }
+        }, false).onClose(() -> close(connection, null, resultSet));
   }
 
   private JdbcTable jdbcTableMapper(MetaImpl.MetaTable tableDef) {
-    return new JdbcTable(this, tableDef.tableCat, tableDef.tableSchem,
-        tableDef.tableName, getTableType(tableDef.tableType));
+    return new JdbcTable(this, tableDef.tableCat, tableDef.tableSchem, tableDef.tableName,
+        getTableType(tableDef.tableType));
   }
 
-  private static MetaImpl.MetaTable metaDataMapper(ResultSet resultSet){
-      try {
-          return new MetaImpl.MetaTable(intern(resultSet.getString(1)), intern(resultSet.getString(2)), intern(resultSet.getString(3)),
-              intern(resultSet.getString(4)));
-      } catch (SQLException e) {
-          throw new RuntimeException(e);
-      }
+  private static MetaImpl.MetaTable metaDataMapper(ResultSet resultSet) {
+    try {
+      return new MetaImpl.MetaTable(intern(resultSet.getString(1)), intern(resultSet.getString(2)),
+          intern(resultSet.getString(3)),
+          intern(resultSet.getString(4)));
+    } catch (SQLException e) {
+      throw new RuntimeException(e);
+    }
   }
 
   private static String intern(@Nullable String string) {
@@ -325,6 +312,7 @@ public class JdbcSchema implements Schema, Wrapper {
     }
     return string.intern();
   }
+
   private static TableType getTableType(String tableTypeName) {
     // Clean up table type. In particular, this ensures that 'SYSTEM TABLE',
     // returned by Phoenix among others, maps to TableType.SYSTEM_TABLE.
@@ -337,11 +325,11 @@ public class JdbcSchema implements Schema, Wrapper {
     // not filter them as we keep all the other table types.
     final String tableTypeName2 =
         tableTypeName == null
-        ? null
-        : tableTypeName.toUpperCase(Locale.ROOT).replace(' ', '_');
+            ? null
+            : tableTypeName.toUpperCase(Locale.ROOT).replace(' ', '_');
     final TableType tableType =
         Util.enumVal(TableType.OTHER, tableTypeName2);
-    if (tableType == TableType.OTHER  && tableTypeName2 != null) {
+    if (tableType == TableType.OTHER && tableTypeName2 != null) {
       LOGGER.info("Unknown table type: {}", tableTypeName2);
     }
     return tableType;
@@ -355,7 +343,7 @@ public class JdbcSchema implements Schema, Wrapper {
 
   /** Returns a pair of (catalog, schema) for the current connection. */
   private Pair<@Nullable String, @Nullable String> getCatalogSchema() {
-    try(Connection connection = dataSource.getConnection()) {
+    try (Connection connection = dataSource.getConnection()) {
       final DatabaseMetaData metaData = connection.getMetaData();
       final List<Integer> version41 = ImmutableList.of(4, 1); // JDBC 4.1
       String catalog = this.catalog;
@@ -377,7 +365,7 @@ public class JdbcSchema implements Schema, Wrapper {
           && metaData.getDatabaseProductName().equals("PostgreSQL")) {
         final String sql = "select current_database(), current_schema()";
         try (Statement statement = connection.createStatement();
-             ResultSet resultSet = statement.executeQuery(sql)) {
+            ResultSet resultSet = statement.executeQuery(sql)) {
           if (resultSet.next()) {
             catalog = resultSet.getString(1);
             schema = resultSet.getString(2);
@@ -388,10 +376,6 @@ public class JdbcSchema implements Schema, Wrapper {
     } catch (SQLException e) {
       throw new RuntimeException(e);
     }
-  }
-
-  @Deprecated @Override public @Nullable Table getTable(String name) {
-    return tables.get(name);
   }
 
   RelProtoDataType getRelDataType(String catalogName, String schemaName,
@@ -517,32 +501,6 @@ public class JdbcSchema implements Schema, Wrapper {
       return typeFactory.createTypeWithNullability(
           typeFactory.createSqlType(SqlTypeName.ANY), true);
     }
-  }
-
-  @Deprecated @Override public Set<String> getTableNames() {
-    return tables.getNames(LikePattern.any());
-  }
-
-  protected Map<String, RelProtoDataType> getTypes() {
-    // TODO: populate map from JDBC metadata
-    return ImmutableMap.of();
-  }
-
-  @Override public @Nullable RelProtoDataType getType(String name) {
-    return getTypes().get(name);
-  }
-
-  @Override public Set<String> getTypeNames() {
-    //noinspection RedundantCast
-    return (Set<String>) getTypes().keySet();
-  }
-
-  @Deprecated @Override public @Nullable Schema getSubSchema(String name) {
-    return subSchemas.get(name);
-  }
-
-  @Deprecated @Override public Set<String> getSubSchemaNames() {
-    return subSchemas.getNames(LikePattern.any());
   }
 
   @Override public <T extends Object> @Nullable T unwrap(Class<T> clazz) {

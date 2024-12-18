@@ -14,13 +14,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.calcite.schema.lookup;
 
 import org.apache.calcite.linq4j.function.Predicate1;
 
 import java.util.regex.Pattern;
 
+/**
+ * This class is used as parameter to Lookup.getNames
+ */
 public class LikePattern {
   private static final String ANY = "%";
   public final String pattern;

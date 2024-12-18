@@ -7575,7 +7575,7 @@ public class JdbcTest {
 
     // create schema "/a/b1". Appears only when we disable caching.
     aSubSchemaMap.put("b1", new AbstractSchema());
-    assertThat(aSchema.subSchemas().getNames(LikePattern.any()), hasSize(1));
+    assertThat(aSchema.subSchemas().getNames(LikePattern.any()), hasSize(0));
     assertThat(aSchema.subSchemas().get("b1"), nullValue());
     aSchema.setCacheEnabled(false);
     assertThat(aSchema.subSchemas().getNames(LikePattern.any()), hasSize(1));

@@ -34,10 +34,21 @@ import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.rel.type.RelProtoDataType;
 import org.apache.calcite.rel.type.RelRecordType;
-import org.apache.calcite.schema.*;
+import org.apache.calcite.schema.ColumnStrategy;
+import org.apache.calcite.schema.ModifiableTable;
+import org.apache.calcite.schema.Path;
+import org.apache.calcite.schema.ScannableTable;
+import org.apache.calcite.schema.Schema;
+import org.apache.calcite.schema.SchemaPlus;
+import org.apache.calcite.schema.SchemaVersion;
+import org.apache.calcite.schema.Schemas;
+import org.apache.calcite.schema.StreamableTable;
+import org.apache.calcite.schema.Table;
+import org.apache.calcite.schema.TemporalTable;
+import org.apache.calcite.schema.TranslatableTable;
+import org.apache.calcite.schema.Wrapper;
 import org.apache.calcite.schema.lookup.LikePattern;
 import org.apache.calcite.schema.lookup.Lookup;
-import org.apache.calcite.schema.lookup.Named;
 import org.apache.calcite.sql.SqlAccessType;
 import org.apache.calcite.sql.validate.SqlModality;
 import org.apache.calcite.sql.validate.SqlMonotonicity;
@@ -427,7 +438,7 @@ public class RelOptTableImpl extends Prepare.AbstractPreparingTable {
       this.parent = parent;
       this.name = name;
       this.schema = schema;
-      this.subSchemas = schema.subSchemas().map((s,key) -> new MySchemaPlus(this, key, s));
+      this.subSchemas = schema.subSchemas().map((s, key) -> new MySchemaPlus(this, key, s));
     }
 
     public static MySchemaPlus create(Path path) {
@@ -501,15 +512,16 @@ public class RelOptTableImpl extends Prepare.AbstractPreparingTable {
     @Override public @Nullable Lookup<Table> tables() {
       return schema.tables();
     }
+
     @Override public @Nullable Lookup<? extends SchemaPlus> subSchemas() {
       return subSchemas;
     }
 
-    @Deprecated @Override public @Nullable Table getTable(String name) {
+    @Override public @Nullable Table getTable(String name) {
       return tables().get(name);
     }
 
-    @Deprecated @Override public Set<String> getTableNames() {
+    @Override public Set<String> getTableNames() {
       return schema.tables().getNames(LikePattern.any());
     }
 
@@ -530,7 +542,7 @@ public class RelOptTableImpl extends Prepare.AbstractPreparingTable {
       return schema.getFunctionNames();
     }
 
-    @Deprecated @Override public Set<String> getSubSchemaNames() {
+    @Override public Set<String> getSubSchemaNames() {
       return schema.subSchemas().getNames(LikePattern.any());
     }
 

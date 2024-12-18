@@ -14,10 +14,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.calcite.schema.lookup;
 
 /**
- * Exceptions used in caches to signal none existing entries.
+ * Schema Lookup SPI.
+ *
+ * <p>The interfaces and classes in this package are used to lookup
+ * tables and subschemas within a schema.
  */
-class EntryNotFoundException extends RuntimeException {
-}
+@DefaultQualifier(value = NonNull.class, locations = TypeUseLocation.FIELD)
+@DefaultQualifier(value = NonNull.class, locations = TypeUseLocation.PARAMETER)
+@DefaultQualifier(value = NonNull.class, locations = TypeUseLocation.RETURN)
+package org.apache.calcite.schema.lookup;
+
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.framework.qual.DefaultQualifier;
+import org.checkerframework.framework.qual.TypeUseLocation;

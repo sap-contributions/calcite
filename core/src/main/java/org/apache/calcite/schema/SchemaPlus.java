@@ -18,10 +18,9 @@ package org.apache.calcite.schema;
 
 import org.apache.calcite.materialize.Lattice;
 import org.apache.calcite.rel.type.RelProtoDataType;
+import org.apache.calcite.schema.lookup.Lookup;
 
 import com.google.common.collect.ImmutableList;
-
-import org.apache.calcite.schema.lookup.Lookup;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -48,6 +47,9 @@ import org.checkerframework.checker.nullness.qual.Nullable;
  */
 public interface SchemaPlus extends Schema {
 
+  /**
+   * Returns a lookup object to find sub schemas.
+   */
   Lookup<? extends SchemaPlus> subSchemas();
   /**
    * Returns the parent schema, or null if this schema has no parent.
@@ -63,7 +65,7 @@ public interface SchemaPlus extends Schema {
   String getName();
 
   // override with stricter return
-  @Deprecated @Override @Nullable SchemaPlus getSubSchema(String name);
+  @Override @Nullable SchemaPlus getSubSchema(String name);
 
   /** Adds a schema as a sub-schema of this schema, and returns the wrapped
    * object. */

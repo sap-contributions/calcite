@@ -18,15 +18,19 @@ package org.apache.calcite.schema.impl;
 
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.rel.type.RelProtoDataType;
-import org.apache.calcite.schema.*;
+import org.apache.calcite.schema.Function;
+import org.apache.calcite.schema.Schema;
+import org.apache.calcite.schema.SchemaFactory;
+import org.apache.calcite.schema.SchemaPlus;
+import org.apache.calcite.schema.SchemaVersion;
+import org.apache.calcite.schema.Schemas;
+import org.apache.calcite.schema.Table;
+import org.apache.calcite.schema.lookup.CompatibilityLookup;
+import org.apache.calcite.schema.lookup.Lookup;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.Multimap;
-
-import org.apache.calcite.schema.lookup.Lookup;
-
-import org.apache.calcite.schema.lookup.SimpleLookup;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -55,8 +59,9 @@ import static java.util.Objects.requireNonNull;
  */
 public class AbstractSchema implements Schema {
 
-  private Lookup<Table> tables = new SimpleLookup<Table>(this::getTable, this::getTableNames);
-  private Lookup<Schema> subSchemas = new SimpleLookup<Schema>(this::getSubSchema, this::getSubSchemaNames);
+  private Lookup<Table> tables = new CompatibilityLookup<>(this::getTable, this::getTableNames);
+  private Lookup<Schema> subSchemas =
+      new CompatibilityLookup<>(this::getSubSchema, this::getSubSchemaNames);
 
   public AbstractSchema() {
   }
@@ -64,6 +69,7 @@ public class AbstractSchema implements Schema {
   @Override public Lookup<Table> tables() {
     return tables;
   }
+
   @Override public Lookup<? extends Schema> subSchemas() {
     return subSchemas;
   }
@@ -95,12 +101,12 @@ public class AbstractSchema implements Schema {
     return ImmutableMap.of();
   }
 
-  @Deprecated @Override public final Set<String> getTableNames() {
+  @Override public final Set<String> getTableNames() {
     //noinspection RedundantCast
     return (Set<String>) getTableMap().keySet();
   }
 
-  @Deprecated @Override public final @Nullable Table getTable(String name) {
+  @Override public final @Nullable Table getTable(String name) {
     return getTableMap().get(name);
   }
 
@@ -166,12 +172,12 @@ public class AbstractSchema implements Schema {
     return ImmutableMap.of();
   }
 
-  @Deprecated @Override public final Set<String> getSubSchemaNames() {
+  @Override public final Set<String> getSubSchemaNames() {
     //noinspection RedundantCast
     return (Set<String>) getSubSchemaMap().keySet();
   }
 
-  @Deprecated @Override public final @Nullable Schema getSubSchema(String name) {
+  @Override public final @Nullable Schema getSubSchema(String name) {
     return getSubSchemaMap().get(name);
   }
 

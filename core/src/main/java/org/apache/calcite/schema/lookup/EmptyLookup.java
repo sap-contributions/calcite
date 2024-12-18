@@ -18,34 +18,28 @@ package org.apache.calcite.schema.lookup;
 
 import com.google.common.collect.ImmutableSet;
 
-import org.apache.calcite.schema.lookup.LikePattern;
-import org.apache.calcite.schema.lookup.Lookup;
-import org.apache.calcite.schema.lookup.Named;
-
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.Set;
 
 /**
- * An abstract base class for lookups. implementing case insensitive lookup
+ * This class implements an empty Lookup.
  *
+ * @param <T> Element type
  */
 class EmptyLookup<T> implements Lookup<T> {
 
-  static Lookup<?> INSTANCE = new EmptyLookup<>();
+  static final Lookup<?> INSTANCE = new EmptyLookup<>();
 
-  @Override
-  public @Nullable T get(String name) {
+  @Override public @Nullable T get(String name) {
     return null;
   }
 
-  @Override
-  public @Nullable Named<T> getIgnoreCase(String name) {
+  @Override public @Nullable Named<T> getIgnoreCase(String name) {
     return null;
   }
 
-  @Override
-  public Set<String> getNames(LikePattern pattern) {
+  @Override public Set<String> getNames(LikePattern pattern) {
     return ImmutableSet.of();
   }
 }

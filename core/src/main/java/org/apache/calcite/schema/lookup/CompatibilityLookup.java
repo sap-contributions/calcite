@@ -17,45 +17,38 @@
 package org.apache.calcite.schema.lookup;
 
 import org.apache.calcite.linq4j.function.Predicate1;
-import org.apache.calcite.util.NameMap;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 /**
- * A Lookup class which is based on a NameMap.
+ * This class can be used to wrap existing schemas with a pair of {@code get...}
+ * and {@code get...Names} into a Lookup object.
  *
  * @param <T> Element type
  */
-class NameMapLookup<T> implements Lookup<T> {
-  private final NameMap<T> map;
+public class CompatibilityLookup<T> extends IgnoreCaseLookup<T> {
 
-  NameMapLookup(NameMap<T> map) {
-    this.map = map;
+  private final Function<String, T> get;
+  private final Supplier<Set<String>> getNames;
+
+  public CompatibilityLookup(Function<String, T> get, Supplier<Set<String>> getNames) {
+    this.get = get;
+    this.getNames = getNames;
   }
 
-  @Override public @Nullable T get(String name) {
-    Map.Entry<String, T> entry = map.range(name, true).firstEntry();
-    if (entry != null) {
-      return entry.getValue();
-    }
-    return null;
-  }
-
-  @Override public @Nullable Named<T> getIgnoreCase(String name) {
-    Map.Entry<String, T> entry = map.range(name, false).firstEntry();
-    if (entry != null) {
-      return new Named<>(entry.getKey(), entry.getValue());
-    }
-    return null;
+  @Nullable
+  @Override public T get(String name) {
+    return get.apply(name);
   }
 
   @Override public @Nullable Set<String> getNames(LikePattern pattern) {
     final Predicate1<String> matcher = pattern.matcher();
-    return map.map().keySet().stream()
+    return getNames.get().stream()
         .filter(name -> matcher.apply(name))
         .collect(Collectors.toSet());
   }

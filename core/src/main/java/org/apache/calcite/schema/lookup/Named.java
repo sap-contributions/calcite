@@ -14,11 +14,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.calcite.schema.lookup;
 
 import java.security.InvalidParameterException;
 
+/**
+ * This class is used to hold an object including its name.
+ *
+ * @param <T> Element type
+ */
 public class Named<T> {
   private final String name;
   private final T entity;

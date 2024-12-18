@@ -22,11 +22,11 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.Set;
 import java.util.function.BiFunction;
-import java.util.function.Function;
 
 /**
- * A case sensitive/insensitive lookup for tables or functions
+ * A casesensitive/insensitive lookup for tables, schems, functions ...
  *
+ * @param <T> Element type
  */
 public interface Lookup<T> {
   /**
@@ -35,7 +35,7 @@ public interface Lookup<T> {
    * @param name Name
    * @return Entity, or null
    */
-  @Nullable  T get(String name) ;
+  @Nullable T get(String name);
 
   /**
    * Returns a named entity with a given name ignoring the case, or null if not found.
@@ -43,7 +43,7 @@ public interface Lookup<T> {
    * @param name Name
    * @return Entity, or null
    */
-  @Nullable Named<T> getIgnoreCase(String name) ;
+  @Nullable Named<T> getIgnoreCase(String name);
 
   /**
    * Returns the names of the entities in matching pattern.
@@ -52,14 +52,20 @@ public interface Lookup<T> {
    */
   Set<String> getNames(LikePattern pattern);
 
-  default <S> Lookup<S> map(BiFunction<T,String,S> mapper) {
-    return new MappedLookup<>(this,mapper);
+  default <S> Lookup<S> map(BiFunction<T, String, S> mapper) {
+    return new MappedLookup<>(this, mapper);
   }
 
-  static <T> T get(Lookup<T> lookup, String name, boolean caseSensitive) {
-    if ( caseSensitive) {
+  /**
+   * Helper method to call Lookup.get(String) or Lookup.getIgnoreCase(String)
+   * depending on the parameter caseSensitive.
+   *
+   * @return Entity, or null
+   */
+  @Nullable static <T> T get(Lookup<T> lookup, String name, boolean caseSensitive) {
+    if (caseSensitive) {
       T entry = lookup.get(name);
-      if ( entry == null ) {
+      if (entry == null) {
         return null;
       }
       return entry;
@@ -67,15 +73,24 @@ public interface Lookup<T> {
     return Named.entity(lookup.getIgnoreCase(name));
   }
 
+  /**
+   * Returns an empty lookup.
+   */
   static <T> Lookup<T> empty() {
     return (Lookup<T>) EmptyLookup.INSTANCE;
   }
 
+  /**
+   * Creates a new lookup object based on a NameMap.
+   */
   static <T> Lookup<T> of(NameMap<T> map) {
     return new NameMapLookup<>(map);
   }
 
-  static <T> Lookup<T> concat(Lookup<T> ...lookups) {
+  /**
+   * Concat a list of lookups.
+   */
+  static <T> Lookup<T> concat(Lookup<T>... lookups) {
     return new ConcatLookup<>(lookups);
   }
 }
