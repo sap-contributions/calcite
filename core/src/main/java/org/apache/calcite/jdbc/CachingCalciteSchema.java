@@ -16,7 +16,6 @@
  */
 package org.apache.calcite.jdbc;
 
-import org.apache.calcite.linq4j.function.Function1;
 import org.apache.calcite.rel.type.RelProtoDataType;
 import org.apache.calcite.schema.Function;
 import org.apache.calcite.schema.Schema;
@@ -37,6 +36,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.ConcurrentLinkedDeque;
 
 import static org.apache.calcite.linq4j.Nullness.castNonNull;
 
@@ -45,7 +45,7 @@ import static org.apache.calcite.linq4j.Nullness.castNonNull;
  * functions and sub-schemas.
  */
 class CachingCalciteSchema extends CalciteSchema {
-  private final ImmutableList<CachedLookup<?>> caches;
+  private final ConcurrentLinkedDeque<CachedLookup<?>> caches = new ConcurrentLinkedDeque<>();
   private final Cached<NameSet> implicitFunctionCache;
   private final Cached<NameSet> implicitTypeCache;
 
@@ -54,8 +54,7 @@ class CachingCalciteSchema extends CalciteSchema {
   /** Creates a CachingCalciteSchema. */
   CachingCalciteSchema(@Nullable CalciteSchema parent, Schema schema,
       String name) {
-    this(parent, schema, name, null, null, null, null, null, null, null, null,
-        new LookupDecorator());
+    this(parent, schema, name, null, null, null, null, null, null, null, null);
   }
 
   @SuppressWarnings({"argument.type.incompatible", "return.type.incompatible"})
@@ -68,11 +67,9 @@ class CachingCalciteSchema extends CalciteSchema {
       @Nullable NameMultimap<FunctionEntry> functionMap,
       @Nullable NameSet functionNames,
       @Nullable NameMap<FunctionEntry> nullaryFunctionMap,
-      @Nullable List<? extends List<String>> path,
-      LookupDecorator lookupDecorator) {
+      @Nullable List<? extends List<String>> path) {
     super(parent, schema, name, subSchemaMap, tableMap, latticeMap, typeMap,
-        functionMap, functionNames, nullaryFunctionMap, path, lookupDecorator);
-    this.caches = lookupDecorator.cacheBuilder.build();
+        functionMap, functionNames, nullaryFunctionMap, path);
     this.implicitFunctionCache =
         new AbstractCached<NameSet>() {
           @Override public NameSet build() {
@@ -105,6 +102,12 @@ class CachingCalciteSchema extends CalciteSchema {
 
   @Override protected @Nullable CalciteSchema createSubSchema(Schema schema, String name) {
     return new CachingCalciteSchema(this, schema, name);
+  }
+
+  @Override protected <S> Lookup<S> decorateLookup(Lookup<S> lookup) {
+    CachedLookup<S> cachedLookup = new CachedLookup<>(lookup);
+    caches.add(cachedLookup);
+    return cachedLookup;
   }
 
   /** Adds a child schema of this schema. */
@@ -202,7 +205,7 @@ class CachingCalciteSchema extends CalciteSchema {
     CalciteSchema snapshot =
         new CachingCalciteSchema(parent, schema.snapshot(version), name, null,
             tableMap, latticeMap, typeMap,
-            functionMap, functionNames, nullaryFunctionMap, getPath(), new LookupDecorator());
+            functionMap, functionNames, nullaryFunctionMap, getPath());
     for (CalciteSchema subSchema : subSchemaMap.map().values()) {
       CalciteSchema subSchemaSnapshot = subSchema.snapshot(snapshot, version);
       snapshot.subSchemaMap.put(subSchema.name, subSchemaSnapshot);
@@ -273,20 +276,6 @@ class CachingCalciteSchema extends CalciteSchema {
         t = null;
       }
       built = false;
-    }
-  }
-
-  /**
-   * This class is used to decorate lookups with a cache.
-   */
-  private static class LookupDecorator implements Function1<Lookup<?>, Lookup<?>> {
-
-    final ImmutableList.Builder<CachedLookup<?>> cacheBuilder = ImmutableList.builder();
-
-    @Override public Lookup apply(final Lookup lookup) {
-      CachedLookup cachedLookup = new CachedLookup(lookup);
-      cacheBuilder.add(cachedLookup);
-      return cachedLookup;
     }
   }
 }

@@ -33,20 +33,19 @@ import java.util.stream.Collectors;
  */
 public class CompatibilityLookup<T> extends IgnoreCaseLookup<T> {
 
-  private final Function<String, T> get;
+  private final Function<String, @Nullable T> get;
   private final Supplier<Set<String>> getNames;
 
-  public CompatibilityLookup(Function<String, T> get, Supplier<Set<String>> getNames) {
+  public CompatibilityLookup(Function<String, @Nullable T> get, Supplier<Set<String>> getNames) {
     this.get = get;
     this.getNames = getNames;
   }
 
-  @Nullable
-  @Override public T get(String name) {
+  @Override public @Nullable T get(String name) {
     return get.apply(name);
   }
 
-  @Override public @Nullable Set<String> getNames(LikePattern pattern) {
+  @Override public Set<String> getNames(LikePattern pattern) {
     final Predicate1<String> matcher = pattern.matcher();
     return getNames.get().stream()
         .filter(name -> matcher.apply(name))

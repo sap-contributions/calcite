@@ -41,6 +41,7 @@ import org.apache.calcite.sql.SqlDialectFactory;
 import org.apache.calcite.sql.SqlDialectFactoryImpl;
 import org.apache.calcite.sql.type.SqlTypeFactoryImpl;
 import org.apache.calcite.sql.type.SqlTypeName;
+import org.apache.calcite.util.LazyReference;
 import org.apache.calcite.util.Pair;
 import org.apache.calcite.util.Util;
 
@@ -56,7 +57,6 @@ import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -88,19 +88,7 @@ public class JdbcSchema extends JdbcBaseSchema implements Schema, Wrapper {
   final @Nullable String schema;
   public final SqlDialect dialect;
   final JdbcConvention convention;
-  private final Lookup<Table> tables = new IgnoreCaseLookup<Table>() {
-    @Override public @Nullable Table get(String name) {
-      try (Stream<MetaImpl.MetaTable> s = getMetaTableStream(name)) {
-        return s.findFirst().map(it -> jdbcTableMapper(it)).orElse(null);
-      }
-    }
-
-    @Override public Set<String> getNames(LikePattern pattern) {
-      try (Stream<MetaImpl.MetaTable> s = getMetaTableStream(pattern.pattern)) {
-        return s.map(it -> it.tableName).collect(Collectors.toSet());
-      }
-    }
-  };
+  private final LazyReference<Lookup<Table>> tables = new LazyReference<>();
   private final Lookup<JdbcSchema> subSchemas = Lookup.empty();
 
   @Experimental
@@ -226,7 +214,19 @@ public class JdbcSchema extends JdbcBaseSchema implements Schema, Wrapper {
   }
 
   @Override public Lookup<Table> tables() {
-    return tables;
+    return tables.getOrCompute(() -> new IgnoreCaseLookup<Table>() {
+      @Override public @Nullable Table get(String name) {
+        try (Stream<MetaImpl.MetaTable> s = getMetaTableStream(name)) {
+          return s.findFirst().map(it -> jdbcTableMapper(it)).orElse(null);
+        }
+      }
+
+      @Override public Set<String> getNames(LikePattern pattern) {
+        try (Stream<MetaImpl.MetaTable> s = getMetaTableStream(pattern.pattern)) {
+          return s.map(it -> it.tableName).collect(Collectors.toSet());
+        }
+      }
+    });
   }
 
   @Override public Lookup<? extends Schema> subSchemas() {
@@ -259,7 +259,6 @@ public class JdbcSchema extends JdbcBaseSchema implements Schema, Wrapper {
     ResultSet resultSet = null;
     try {
       connection = dataSource.getConnection();
-      final List<MetaImpl.MetaTable> tableDefList = new ArrayList<>();
       final DatabaseMetaData metaData = connection.getMetaData();
       resultSet =
           metaData.getTables(catalogSchema.left, catalogSchema.right, tableNamePattern, null);
@@ -306,7 +305,7 @@ public class JdbcSchema extends JdbcBaseSchema implements Schema, Wrapper {
     }
   }
 
-  private static String intern(@Nullable String string) {
+  private static @Nullable String intern(@Nullable String string) {
     if (string == null) {
       return null;
     }

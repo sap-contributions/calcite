@@ -16,47 +16,42 @@
  */
 package org.apache.calcite.schema.lookup;
 
-import org.apache.calcite.linq4j.function.Predicate1;
-import org.apache.calcite.util.NameMap;
-
 import org.checkerframework.checker.nullness.qual.Nullable;
 
+import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- * A Lookup class which is based on a NameMap.
- *
- * @param <T> Element type
+ * Simple test class for Lookup.
  */
-class NameMapLookup<T> implements Lookup<T> {
-  private final NameMap<T> map;
+class MapLookup implements Lookup<String> {
+  private final Map<String, String> map;
+  private final Map<String, Named<String>> ignoreCaseMap;
 
-  NameMapLookup(NameMap<T> map) {
-    this.map = map;
-  }
-
-  @Override public @Nullable T get(String name) {
-    Map.Entry<String, T> entry = map.range(name, true).firstEntry();
-    if (entry != null) {
-      return entry.getValue();
+  MapLookup(String... keyAndValues) {
+    this.map = new HashMap<>();
+    for (int i = 0; i < keyAndValues.length - 1; i += 2) {
+      map.put(keyAndValues[i], keyAndValues[i + 1]);
     }
-    return null;
+    this.ignoreCaseMap = this.map.entrySet().stream()
+        .collect(
+            Collectors.toMap(
+                entry -> entry.getKey().toLowerCase(Locale.ROOT),
+                entry -> new Named<>(entry.getKey(), entry.getValue())));
   }
 
-  @Override public @Nullable Named<T> getIgnoreCase(String name) {
-    Map.Entry<String, T> entry = map.range(name, false).firstEntry();
-    if (entry != null) {
-      return new Named<>(entry.getKey(), entry.getValue());
-    }
-    return null;
+  @Override public @Nullable String get(final String name) {
+    return map.get(name);
   }
 
-  @Override public Set<String> getNames(LikePattern pattern) {
-    final Predicate1<String> matcher = pattern.matcher();
-    return map.map().keySet().stream()
-        .filter(name -> matcher.apply(name))
-        .collect(Collectors.toSet());
+  @Override public @Nullable Named<String> getIgnoreCase(final String name) {
+    return ignoreCaseMap.get(name.toLowerCase(Locale.ROOT));
+  }
+
+  @Override public Set<String> getNames(final LikePattern pattern) {
+    return map.keySet();
   }
 }

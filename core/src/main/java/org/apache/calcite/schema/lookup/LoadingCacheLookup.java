@@ -23,10 +23,11 @@ import com.google.common.util.concurrent.UncheckedExecutionException;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+
+import static java.util.Objects.requireNonNull;
 
 /**
  * This class can be used to cache lookups.
@@ -43,27 +44,17 @@ public class LoadingCacheLookup<T> implements Lookup<T> {
     this.delegate = delegate;
     this.cache = CacheBuilder.newBuilder()
         .expireAfterWrite(1, TimeUnit.MINUTES)
-        .build(new CacheLoader<String, T>() {
-          @Override public T load(String name) throws Exception {
-            return Optional.ofNullable(delegate.get(name))
-                .orElseThrow(() -> new EntryNotFoundException());
-          }
-        });
+        .build(CacheLoader.from(name -> requireNonNull(delegate.get(name))));
     this.cacheIgnoreCase = CacheBuilder.newBuilder()
         .expireAfterWrite(1, TimeUnit.MINUTES)
-        .build(new CacheLoader<String, Named<T>>() {
-          @Override public Named<T> load(String name) throws Exception {
-            return Optional.ofNullable(delegate.getIgnoreCase(name))
-                .orElseThrow(() -> new EntryNotFoundException());
-          }
-        });
+        .build(CacheLoader.from(name -> requireNonNull(delegate.getIgnoreCase(name))));
   }
 
   @Override public @Nullable T get(String name) {
     try {
       return cache.get(name);
     } catch (UncheckedExecutionException e) {
-      if (e.getCause() instanceof EntryNotFoundException) {
+      if (e.getCause() instanceof NullPointerException) {
         return null;
       }
       throw e;
@@ -76,7 +67,7 @@ public class LoadingCacheLookup<T> implements Lookup<T> {
     try {
       return cacheIgnoreCase.get(name);
     } catch (UncheckedExecutionException e) {
-      if (e.getCause() instanceof EntryNotFoundException) {
+      if (e.getCause() instanceof NullPointerException) {
         return null;
       }
       throw e;
@@ -87,15 +78,5 @@ public class LoadingCacheLookup<T> implements Lookup<T> {
 
   @Override public Set<String> getNames(LikePattern pattern) {
     return delegate.getNames(pattern);
-  }
-
-  public void invalidate(String name) {
-    cache.invalidate(name);
-    cacheIgnoreCase.invalidate(name);
-  }
-
-  public void invalidateAll() {
-    cache.invalidateAll();
-    cacheIgnoreCase.invalidateAll();
   }
 }

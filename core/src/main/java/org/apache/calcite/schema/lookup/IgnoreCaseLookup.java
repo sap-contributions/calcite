@@ -16,6 +16,7 @@
  */
 package org.apache.calcite.schema.lookup;
 
+import org.apache.calcite.util.LazyReference;
 import org.apache.calcite.util.NameMap;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -30,10 +31,7 @@ import java.util.Set;
  */
 public abstract class IgnoreCaseLookup<T> implements Lookup<T> {
 
-  private NameMap<String> nameMap;
-
-  public IgnoreCaseLookup() {
-  }
+  private LazyReference<NameMap<String>> nameMap = new LazyReference<>();
 
   /**
    * Returns a named entity with a given name, or null if not found.
@@ -41,7 +39,7 @@ public abstract class IgnoreCaseLookup<T> implements Lookup<T> {
    * @param name Name
    * @return Entity, or null
    */
-  @Nullable public abstract T get(String name);
+  @Override public abstract @Nullable T get(String name);
 
   /**
    * Returns a named entity with a given name ignoring the case, or null if not found.
@@ -50,31 +48,30 @@ public abstract class IgnoreCaseLookup<T> implements Lookup<T> {
    * @return Entity, or null
    */
   @Override @Nullable public Named<T> getIgnoreCase(String name) {
-    Map.Entry<String, String> entry = getNameMap(false).range(name, false).firstEntry();
-    if (entry == null) {
-      entry = getNameMap(true).range(name, false).firstEntry();
-      if (entry == null) {
+    int retryCounter = 0;
+    while (true) {
+      Map.Entry<String, String> entry = nameMap.getOrCompute(this::loadNames)
+          .range(name, false)
+          .firstEntry();
+      if (entry != null) {
+        T result = get(entry.getValue());
+        return result == null ? null : new Named<>(entry.getKey(), result);
+      }
+      retryCounter++;
+      if (retryCounter > 1) {
         return null;
       }
+      nameMap.reset();
     }
-    T result = get(entry.getValue());
-    return result == null ? null : new Named<>(entry.getKey(), result);
   }
 
-  @Nullable public abstract Set<String> getNames(LikePattern pattern);
+  @Override public abstract Set<String> getNames(LikePattern pattern);
 
-  private NameMap<String> getNameMap(boolean forceReload) {
-    if (nameMap == null || forceReload) {
-      synchronized (this) {
-        if (nameMap == null || forceReload) {
-          NameMap<String> tmp = new NameMap<>();
-          for (String name : getNames(LikePattern.any())) {
-            tmp.put(name, name);
-          }
-          nameMap = tmp;
-        }
-      }
+  private NameMap<String> loadNames() {
+    NameMap<String> result = new NameMap<>();
+    for (String name : getNames(LikePattern.any())) {
+      result.put(name, name);
     }
-    return nameMap;
+    return result;
   }
 }

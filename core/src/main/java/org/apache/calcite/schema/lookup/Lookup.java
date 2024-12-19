@@ -62,7 +62,7 @@ public interface Lookup<T> {
    *
    * @return Entity, or null
    */
-  @Nullable static <T> T get(Lookup<T> lookup, String name, boolean caseSensitive) {
+  static <T> @Nullable T get(Lookup<T> lookup, String name, boolean caseSensitive) {
     if (caseSensitive) {
       T entry = lookup.get(name);
       if (entry == null) {
@@ -70,7 +70,7 @@ public interface Lookup<T> {
       }
       return entry;
     }
-    return Named.entity(lookup.getIgnoreCase(name));
+    return Named.entityOrNull(lookup.getIgnoreCase(name));
   }
 
   /**

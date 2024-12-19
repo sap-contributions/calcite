@@ -27,6 +27,7 @@ import org.apache.calcite.schema.Schemas;
 import org.apache.calcite.schema.Table;
 import org.apache.calcite.schema.lookup.CompatibilityLookup;
 import org.apache.calcite.schema.lookup.Lookup;
+import org.apache.calcite.util.LazyReference;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMultimap;
@@ -59,19 +60,17 @@ import static java.util.Objects.requireNonNull;
  */
 public class AbstractSchema implements Schema {
 
-  private Lookup<Table> tables = new CompatibilityLookup<>(this::getTable, this::getTableNames);
-  private Lookup<Schema> subSchemas =
-      new CompatibilityLookup<>(this::getSubSchema, this::getSubSchemaNames);
-
-  public AbstractSchema() {
-  }
+  private LazyReference<Lookup<Table>> tables = new LazyReference<>();
+  private LazyReference<Lookup<Schema>> subSchemas = new LazyReference<>();
 
   @Override public Lookup<Table> tables() {
-    return tables;
+    return tables.getOrCompute(
+        () -> new CompatibilityLookup<>(this::getTable, this::getTableNames));
   }
 
   @Override public Lookup<? extends Schema> subSchemas() {
-    return subSchemas;
+    return subSchemas.getOrCompute(
+        () -> new CompatibilityLookup<>(this::getSubSchema, this::getSubSchemaNames));
   }
 
   @Override public boolean isMutable() {

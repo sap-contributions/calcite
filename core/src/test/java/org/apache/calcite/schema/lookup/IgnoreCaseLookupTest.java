@@ -17,46 +17,42 @@
 package org.apache.calcite.schema.lookup;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.junit.jupiter.api.Test;
 
+import java.util.Collections;
 import java.util.Set;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+
+import static org.hamcrest.CoreMatchers.nullValue;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
 
 /**
- * This class can be used to concat a list of lookups.
- *
- * @param <T> Element type
+ * Test for IgnoreCaseLookup.
  */
-class ConcatLookup<T> implements Lookup<T> {
-  private final Lookup<T>[] lookups;
-
-  ConcatLookup(Lookup<T>[] lookups) {
-    this.lookups = lookups;
-  }
-
-  @Override public @Nullable T get(String name) {
-    for (Lookup<T> lookup : lookups) {
-      T t = lookup.get(name);
-      if (t != null) {
-        return t;
+class IgnoreCaseLookupTest {
+  private final Lookup<String> testee = new IgnoreCaseLookup<String>() {
+    @Override public @Nullable String get(final String name) {
+      if ("a".equals(name)) {
+        return "1";
       }
+      return null;
     }
-    return null;
+
+    @Override public Set<String> getNames(final LikePattern pattern) {
+      return Collections.singleton("a");
+    }
+  };
+
+  @Test void testNull() {
+    assertThat(testee.get("c"), nullValue());
   }
 
-  @Override public @Nullable Named<T> getIgnoreCase(String name) {
-    for (Lookup<T> lookup : lookups) {
-      Named<T> t = lookup.getIgnoreCase(name);
-      if (t != null) {
-        return t;
-      }
-    }
-    return null;
+  @Test void test() {
+    assertThat(testee.get("a"), equalTo("1"));
   }
 
-  @Override public Set<String> getNames(LikePattern pattern) {
-    return Stream.of(lookups)
-        .flatMap(lookup -> lookup.getNames(pattern).stream())
-        .collect(Collectors.toSet());
+  @Test void testIgnoreCase() {
+    assertThat(testee.getIgnoreCase("A"), equalTo(new Named<>("a", "1")));
   }
+
 }

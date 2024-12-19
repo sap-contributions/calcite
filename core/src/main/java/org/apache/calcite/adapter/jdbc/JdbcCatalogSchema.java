@@ -41,6 +41,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Supplier;
 import javax.sql.DataSource;
@@ -68,8 +69,8 @@ public class JdbcCatalogSchema extends JdbcBaseSchema implements Wrapper {
 
   /** default schema name, lazily initialized. */
   @SuppressWarnings({"method.invocation.invalid", "Convert2MethodRef"})
-  private final Supplier<String> defaultSchemaName =
-      Suppliers.memoize(() -> computeDefaultSchemaName());
+  private final Supplier<Optional<String>> defaultSchemaName =
+      Suppliers.memoize(() -> Optional.ofNullable(computeDefaultSchemaName()));
 
   /** Creates a JdbcCatalogSchema. */
   public JdbcCatalogSchema(DataSource dataSource, SqlDialect dialect,
@@ -150,7 +151,7 @@ public class JdbcCatalogSchema extends JdbcBaseSchema implements Wrapper {
     return subSchemas;
   }
 
-  private String computeDefaultSchemaName() {
+  private @Nullable String computeDefaultSchemaName() {
     try (Connection connection = dataSource.getConnection()) {
       return connection.getSchema();
     } catch (SQLException e) {
@@ -160,7 +161,7 @@ public class JdbcCatalogSchema extends JdbcBaseSchema implements Wrapper {
 
   /** Returns the name of the default sub-schema. */
   public @Nullable String getDefaultSubSchemaName() {
-    return defaultSchemaName.get();
+    return defaultSchemaName.get().orElse(null);
   }
 
   /** Returns the data source. */

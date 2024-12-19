@@ -34,7 +34,7 @@ public class LikePattern {
     this.pattern = pattern;
   }
 
-  public String toString() {
+  @Override public String toString() {
     return "LikePattern[" + this.pattern + "]";
   }
 

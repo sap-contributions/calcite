@@ -18,9 +18,6 @@ package org.apache.calcite.jdbc;
 
 import org.apache.calcite.rel.type.RelProtoDataType;
 import org.apache.calcite.schema.Function;
-import org.apache.calcite.schema.lookup.LikePattern;
-import org.apache.calcite.schema.lookup.Lookup;
-import org.apache.calcite.schema.lookup.Named;
 import org.apache.calcite.schema.Schema;
 import org.apache.calcite.schema.SchemaVersion;
 import org.apache.calcite.schema.Table;
@@ -45,7 +42,6 @@ import java.util.Set;
  * that maintains minimal state.
  */
 class SimpleCalciteSchema extends CalciteSchema {
-
   /** Creates a SimpleCalciteSchema.
    *
    * <p>Use {@link CalciteSchema#createRootSchema(boolean)}
@@ -104,7 +100,7 @@ class SimpleCalciteSchema extends CalciteSchema {
     return null;
   }
 
-  @Override protected @Nullable CalciteSchema createSubSchema(Schema schema, String name) {
+  @Override protected CalciteSchema createSubSchema(Schema schema, String name) {
     return new SimpleCalciteSchema(this, schema, name);
   }
 

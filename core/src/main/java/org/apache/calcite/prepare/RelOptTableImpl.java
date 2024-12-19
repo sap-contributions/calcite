@@ -55,6 +55,7 @@ import org.apache.calcite.sql.validate.SqlMonotonicity;
 import org.apache.calcite.sql2rel.InitializerExpressionFactory;
 import org.apache.calcite.sql2rel.NullInitializerExpressionFactory;
 import org.apache.calcite.util.ImmutableBitSet;
+import org.apache.calcite.util.LazyReference;
 import org.apache.calcite.util.Pair;
 import org.apache.calcite.util.Util;
 
@@ -431,14 +432,13 @@ public class RelOptTableImpl extends Prepare.AbstractPreparingTable {
     private final @Nullable SchemaPlus parent;
     private final String name;
     private final Schema schema;
-    private final Lookup<? extends SchemaPlus> subSchemas;
+    private final LazyReference<Lookup<? extends SchemaPlus>> subSchemas = new LazyReference<>();
 
 
     MySchemaPlus(@Nullable SchemaPlus parent, String name, Schema schema) {
       this.parent = parent;
       this.name = name;
       this.schema = schema;
-      this.subSchemas = schema.subSchemas().map((s, key) -> new MySchemaPlus(this, key, s));
     }
 
     public static MySchemaPlus create(Path path) {
@@ -460,8 +460,8 @@ public class RelOptTableImpl extends Prepare.AbstractPreparingTable {
       return name;
     }
 
-    @Deprecated @Override public @Nullable SchemaPlus getSubSchema(String name) {
-      return subSchemas.get(name);
+    @Override public @Nullable SchemaPlus getSubSchema(String name) {
+      return subSchemas().get(name);
     }
 
     @Override public SchemaPlus add(String name, Schema schema) {
@@ -509,12 +509,13 @@ public class RelOptTableImpl extends Prepare.AbstractPreparingTable {
       return false;
     }
 
-    @Override public @Nullable Lookup<Table> tables() {
+    @Override public Lookup<Table> tables() {
       return schema.tables();
     }
 
-    @Override public @Nullable Lookup<? extends SchemaPlus> subSchemas() {
-      return subSchemas;
+    @Override public Lookup<? extends SchemaPlus> subSchemas() {
+      return subSchemas.getOrCompute(
+          () -> schema.subSchemas().map((s, key) -> new MySchemaPlus(this, key, s)));
     }
 
     @Override public @Nullable Table getTable(String name) {

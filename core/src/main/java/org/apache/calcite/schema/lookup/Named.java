@@ -16,7 +16,10 @@
  */
 package org.apache.calcite.schema.lookup;
 
-import java.security.InvalidParameterException;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
+
+import static java.util.Objects.requireNonNull;
 
 /**
  * This class is used to hold an object including its name.
@@ -25,14 +28,11 @@ import java.security.InvalidParameterException;
  */
 public class Named<T> {
   private final String name;
-  private final T entity;
+  private final @NonNull T entity;
 
   public Named(String name, T entity) {
     this.name = name;
-    if (entity == null) {
-      throw new InvalidParameterException("table");
-    }
-    this.entity = entity;
+    this.entity = requireNonNull(entity, "entity");
   }
 
   public final String name() {
@@ -43,7 +43,25 @@ public class Named<T> {
     return entity;
   }
 
-  public static <T> T entity(Named<T> named) {
+  public static <T> @Nullable T entityOrNull(@Nullable Named<T> named) {
     return named == null ? null : named.entity;
+  }
+
+  @Override public boolean equals(final @Nullable Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+
+    final Named<?> named = (Named<?>) o;
+    return name.equals(named.name) && entity.equals(named.entity);
+  }
+
+  @Override public int hashCode() {
+    int result = name.hashCode();
+    result = 31 * result + entity.hashCode();
+    return result;
   }
 }
