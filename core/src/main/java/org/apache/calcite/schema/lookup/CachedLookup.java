@@ -16,6 +16,7 @@
  */
 package org.apache.calcite.schema.lookup;
 
+import org.apache.calcite.util.LazyReference;
 import org.apache.calcite.util.NameMap;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -30,7 +31,7 @@ import java.util.Set;
 public class CachedLookup<T> implements Lookup<T> {
 
   private final Lookup<T> delegate;
-  private Lookup<T> cachedDelegate = null;
+  private LazyReference<Lookup<T>> cachedDelegate = new LazyReference<>();
   private boolean enabled = true;
 
   public CachedLookup(Lookup<T> delegate) {
@@ -53,23 +54,23 @@ public class CachedLookup<T> implements Lookup<T> {
     if (!enabled) {
       return delegate;
     }
-    if (cachedDelegate == null) {
-      synchronized (this) {
-        if (cachedDelegate == null) {
-          NameMap<T> map = new NameMap<>();
-          for (String name : delegate.getNames(LikePattern.any())) {
-            map.put(name, delegate.get(name));
-          }
-          cachedDelegate = new NameMapLookup<>(map);
-        }
+    return cachedDelegate.getOrCompute(() -> new NameMapLookup<>(loadNameMap()));
+  }
+
+  private NameMap<T> loadNameMap() {
+    NameMap<T> map = new NameMap<>();
+    for (String name : delegate.getNames(LikePattern.any())) {
+      T entry = delegate.get(name);
+      if (entry != null) {
+        map.put(name, entry);
       }
     }
-    return cachedDelegate;
+    return map;
   }
 
   public void enable(boolean enabled) {
     if (!enabled) {
-      cachedDelegate = null;
+      cachedDelegate.reset();
     }
     this.enabled = enabled;
   }

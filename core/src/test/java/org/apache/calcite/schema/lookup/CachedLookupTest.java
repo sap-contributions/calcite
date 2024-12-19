@@ -16,8 +16,28 @@
  */
 package org.apache.calcite.schema.lookup;
 
+import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.CoreMatchers.nullValue;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
+
 /**
- * Exceptions used in caches to signal none existing entries.
+ * Test for CachedLookup.
  */
-class EntryNotFoundException extends RuntimeException {
+class CachedLookupTest {
+  private final Lookup<String> testee = new CachedLookup<>(new MapLookup("a", "1"));
+
+  @Test void testNull() {
+    assertThat(testee.get("c"), nullValue());
+  }
+
+  @Test void test() {
+    assertThat(testee.get("a"), equalTo("1"));
+  }
+
+  @Test void testIgnoreCase() {
+    assertThat(testee.getIgnoreCase("A"), equalTo(new Named<>("a", "1")));
+  }
+
 }

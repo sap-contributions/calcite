@@ -48,7 +48,7 @@ class MappedLookup<S, T> implements Lookup<T> {
         : new Named<>(named.name(), mapper.apply(named.entity(), named.name()));
   }
 
-  @Override public @Nullable Set<String> getNames(LikePattern pattern) {
+  @Override public Set<String> getNames(LikePattern pattern) {
     return lookup.getNames(pattern);
   }
 }
