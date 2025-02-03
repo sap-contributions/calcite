@@ -439,12 +439,31 @@ public class JdbcSchema extends JdbcBaseSchema implements Schema, Wrapper {
     switch (sqlTypeName) {
     case ARRAY:
       RelDataType component = null;
-      if (typeString != null && typeString.endsWith(" ARRAY")) {
-        // E.g. hsqldb gives "INTEGER ARRAY", so we deduce the component type
-        // "INTEGER".
-        final String remaining =
-            typeString.substring(0, typeString.length() - " ARRAY".length());
-        component = parseTypeString(typeFactory, remaining);
+      if (typeString != null) {
+        if (typeString.endsWith(" ARRAY")) {
+          // E.g. hsqldb gives "INTEGER ARRAY", so we deduce the component type
+          // "INTEGER".
+          final String remaining =
+              typeString.substring(0, typeString.length() - " ARRAY".length());
+          component = parseTypeString(typeFactory, remaining);
+        } else if (typeString.startsWith("_")) {
+          typeString = typeString.substring(1).toUpperCase();
+          switch (typeString) {
+          case "TEXT":
+            typeString = "VARCHAR";
+            break;
+          case "INT4":
+            typeString = "INTEGER";
+            break;
+          case "INT8":
+            typeString = "BIGINT";
+            break;
+          case "NUMERIC":
+            typeString = "DECIMAL(19,2)";
+            break;
+          }
+          component = parseTypeString(typeFactory, typeString);
+        }
       }
       if (component == null) {
         component =
@@ -483,7 +502,7 @@ public class JdbcSchema extends JdbcBaseSchema implements Schema, Wrapper {
         int comma = rest.indexOf(",");
         if (comma >= 0) {
           precision = parseInt(rest.substring(0, comma));
-          scale = parseInt(rest.substring(comma));
+          scale = parseInt(rest.substring(comma + 1));
         } else {
           precision = parseInt(rest);
         }
