@@ -616,7 +616,11 @@ public abstract class SqlImplementor {
       this.ignoreCast = ignoreCast;
     }
 
-    public abstract SqlNode field(int ordinal);
+    public abstract SqlNode field(int ordinal, Clause clause);
+
+    public  SqlNode field(int ordinal){
+      return field(ordinal, Clause.SELECT);
+    }
 
     /** Creates a reference to a field to be used in an ORDER BY clause.
      *
@@ -1571,7 +1575,7 @@ public abstract class SqlImplementor {
       throw new UnsupportedOperationException();
     }
 
-    @Override public SqlNode field(int ordinal) {
+    @Override public SqlNode field(int ordinal, Clause clause) {
       return field.apply(ordinal);
     }
   }
@@ -1650,7 +1654,7 @@ public abstract class SqlImplementor {
       this.qualified = qualified;
     }
 
-    @Override public SqlNode field(int ordinal) {
+    @Override public SqlNode field(int ordinal, Clause clause) {
       for (Map.Entry<String, RelDataType> alias : aliases.entrySet()) {
         final List<RelDataTypeField> fields = alias.getValue().getFieldList();
         if (ordinal < fields.size()) {
@@ -1681,11 +1685,11 @@ public abstract class SqlImplementor {
       this.rightContext = rightContext;
     }
 
-    @Override public SqlNode field(int ordinal) {
+    @Override public SqlNode field(int ordinal, Clause clause) {
       if (ordinal < leftContext.fieldCount) {
         return leftContext.field(ordinal);
       } else {
-        return rightContext.field(ordinal - leftContext.fieldCount);
+        return rightContext.field(ordinal - leftContext.fieldCount,clause);
       }
     }
 
@@ -1726,7 +1730,7 @@ public abstract class SqlImplementor {
       this.inputSqlNodes = inputSqlNodes;
     }
 
-    @Override public SqlNode field(int ordinal) {
+    @Override public SqlNode field(int ordinal, Clause clause) {
       return inputSqlNodes.get(ordinal);
     }
   }
@@ -1833,20 +1837,23 @@ public abstract class SqlImplementor {
             return SqlImplementor.this;
           }
 
-          @Override public SqlNode field(int ordinal) {
+          @Override public SqlNode field(int ordinal, Clause clause) {
             final SqlNode selectItem = selectList.get(ordinal);
             switch (selectItem.getKind()) {
             case AS:
               final SqlCall asCall = (SqlCall) selectItem;
               SqlNode alias = asCall.operand(1);
-              if ((aliasRef && !SqlUtil.isGeneratedAlias(((SqlIdentifier) alias).getSimple()))
-                  || (RelOptUtil.hasCalcViewHint(rel)
-                  && asCall.operand(0) instanceof SqlIdentifier)) {
+              if ((aliasRef && !SqlUtil.isGeneratedAlias(((SqlIdentifier) alias).getSimple()))) {
                 // For BigQuery, given the query
                 //   SELECT SUM(x) AS x FROM t HAVING(SUM(t.x) > 0)
                 // we can generate
                 //   SELECT SUM(x) AS x FROM t HAVING(x > 0)
                 // because 'x' in HAVING resolves to the 'AS x' not 't.x'.
+                return alias;
+              }
+              if (RelOptUtil.hasCalcViewHint(rel)
+                      && asCall.operand(0) instanceof SqlIdentifier
+                      && clause != Clause.GROUP_BY) {
                 return alias;
               }
               return asCall.operand(0);
