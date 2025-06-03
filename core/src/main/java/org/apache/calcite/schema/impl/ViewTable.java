@@ -26,6 +26,7 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelRoot;
 import org.apache.calcite.rel.RelShuttleImpl;
 import org.apache.calcite.rel.core.TableScan;
+import org.apache.calcite.rel.hint.Hintable;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rel.type.RelProtoDataType;
@@ -137,7 +138,13 @@ public class ViewTable
               final TranslatableTable translatableTable =
                   table.unwrap(TranslatableTable.class);
               if (translatableTable != null) {
-                return translatableTable.toRel(context, table);
+                RelNode result = translatableTable.toRel(context, table);
+                if ( !scan.getHints().isEmpty()) {
+                  if ( result instanceof Hintable) {
+                    result = ((Hintable)result).withHints(scan.getHints());
+                  }
+                }
+                return result;
               }
               return super.visit(scan);
             }
