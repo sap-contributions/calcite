@@ -16,6 +16,8 @@
  */
 package org.apache.calcite.schema.impl;
 
+import java.util.Optional;
+
 import org.apache.calcite.adapter.java.AbstractQueryableTable;
 import org.apache.calcite.jdbc.CalciteSchema;
 import org.apache.calcite.linq4j.QueryProvider;
@@ -26,6 +28,8 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelRoot;
 import org.apache.calcite.rel.RelShuttleImpl;
 import org.apache.calcite.rel.core.TableScan;
+import org.apache.calcite.rel.hint.Hintable;
+import org.apache.calcite.rel.hint.RelHint;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rel.type.RelProtoDataType;
@@ -137,7 +141,16 @@ public class ViewTable
               final TranslatableTable translatableTable =
                   table.unwrap(TranslatableTable.class);
               if (translatableTable != null) {
-                return translatableTable.toRel(context, table);
+                RelNode result = translatableTable.toRel(context, table);
+                if ( result instanceof Hintable) {
+                  Optional<RelHint> parameter = scan.getHints().stream()
+                    .filter(hint -> hint.hintName.equals("PARAMETERS"))
+                    .findAny();
+                  if ( parameter.isPresent()) {
+                    result = ((Hintable)result).attachHints(ImmutableList.of(parameter.get()));
+                  }
+                }
+                return result;
               }
               return super.visit(scan);
             }
