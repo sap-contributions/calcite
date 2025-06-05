@@ -16,9 +16,13 @@
  */
 package org.apache.calcite.adapter.enumerable;
 
+import java.util.function.Predicate;
+
+import org.apache.calcite.adapter.jdbc.JdbcConvention;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelRule;
+import org.apache.calcite.plan.RelTrait;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.CorrelationId;
 import org.apache.calcite.rel.core.Join;
@@ -80,10 +84,45 @@ public class EnumerableBatchNestedLoopJoinRule
   @Override public boolean matches(RelOptRuleCall call) {
     Join join = call.rel(0);
     JoinRelType joinType = join.getJoinType();
-    return joinType == JoinRelType.INNER
+    return (joinType == JoinRelType.INNER
         || joinType == JoinRelType.LEFT
         || joinType == JoinRelType.ANTI
-        || joinType == JoinRelType.SEMI;
+        || joinType == JoinRelType.SEMI )
+           && !allLeafsMatch(join, new HasSingleJdbcSource());
+  }
+
+  private static class HasSingleJdbcSource implements Predicate<RelNode> {
+    private JdbcConvention convention = null;
+    @Override
+    public boolean test(RelNode node) {
+      for (RelTrait trait : node.getTraitSet()) {
+        if (trait instanceof JdbcConvention) {
+          JdbcConvention otherConvention = (JdbcConvention) trait;
+          // The first leaf in the tree sets the convention
+          if (convention == null) {
+            convention = otherConvention;
+            return true;
+          }
+          // All other leafs must match the stored convention
+          return convention == otherConvention;
+        }
+      }
+      return false;
+    }
+  }
+
+  private boolean allLeafsMatch(RelNode node, HasSingleJdbcSource predicate) {
+      List<RelNode> inputs = node.getInputs();
+      if ( inputs.isEmpty()) {
+        return predicate.test(node);
+      } else {
+        for ( RelNode input : inputs) {
+          if ( !allLeafsMatch(input.stripped(), predicate)) {
+            return false;
+          }
+        }
+      }
+      return true;
   }
 
   @Override public void onMatch(RelOptRuleCall call) {
