@@ -144,7 +144,7 @@ public class ViewTable
                 RelNode result = translatableTable.toRel(context, table);
                 if ( result instanceof Hintable) {
                   Optional<RelHint> parameter = scan.getHints().stream()
-                    .filter(hint -> hint.hintName.equals("PARAMETERS"))
+                    .filter(hint -> hint.hintName.equals("PARAMETERS") || hint.hintName.equals("ANONYMIZE"))
                     .findAny();
                   if ( parameter.isPresent()) {
                     result = ((Hintable)result).attachHints(ImmutableList.of(parameter.get()));

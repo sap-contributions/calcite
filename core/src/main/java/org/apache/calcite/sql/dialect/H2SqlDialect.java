@@ -39,7 +39,7 @@ public class H2SqlDialect extends SqlDialect {
   }
 
   @Override public boolean supportsWindowFunctions() {
-    return false;
+    return true;
   }
 
   @Override public boolean supportsJoinType(JoinRelType joinType) {
