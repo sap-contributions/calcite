@@ -18,6 +18,8 @@ package org.apache.calcite.adapter.enumerable;
 
 import java.util.function.Predicate;
 
+import java.util.function.Supplier;
+
 import org.apache.calcite.adapter.jdbc.JdbcConvention;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptRuleCall;
@@ -28,6 +30,7 @@ import org.apache.calcite.rel.core.CorrelationId;
 import org.apache.calcite.rel.core.Join;
 import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rel.logical.LogicalJoin;
+import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexCorrelVariable;
 import org.apache.calcite.rex.RexInputRef;
@@ -133,17 +136,15 @@ public class EnumerableBatchNestedLoopJoinRule
     final RelBuilder relBuilder = call.builder();
 
     final Set<CorrelationId> correlationIds = new HashSet<>();
-    final List<RexNode> corrVarList = new ArrayList<>();
 
-    final int batchSize = config.batchSize();
-    for (int i = 0; i < batchSize; i++) {
+    final RelDataType leftRowType = join.getLeft().getRowType();
+    int batchSize = config.batchSize();
+    Supplier<RexNode> corrVarSupplier = () -> {
       CorrelationId correlationId = cluster.createCorrel();
       correlationIds.add(correlationId);
-      corrVarList.add(
-          rexBuilder.makeCorrel(join.getLeft().getRowType(),
-              correlationId));
-    }
-    final RexNode corrVar0 = corrVarList.get(0);
+      return rexBuilder.makeCorrel(leftRowType,correlationId);
+    };
+    final RexNode corrVar0 = corrVarSupplier.get();
 
     final ImmutableBitSet.Builder requiredColumns = ImmutableBitSet.builder();
 
@@ -163,12 +164,14 @@ public class EnumerableBatchNestedLoopJoinRule
     final List<RexNode> conditionList = new ArrayList<>();
     conditionList.add(condition);
 
+    if ( requiredColumns.cardinality() > 2) {
+      batchSize = batchSize * 2 / requiredColumns.cardinality();
+    }
     // Add batchSize-1 other conditions
     for (int i = 1; i < batchSize; i++) {
-      final int corrIndex = i;
       final RexNode condition2 = condition.accept(new RexShuttle() {
         @Override public RexNode visitCorrelVariable(RexCorrelVariable variable) {
-          return variable.equals(corrVar0) ? corrVarList.get(corrIndex) : variable;
+          return variable.equals(corrVar0) ? corrVarSupplier.get() : variable;
         }
       });
       conditionList.add(condition2);
