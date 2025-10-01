@@ -22,4 +22,5 @@ public class Hints {
 
   }
   public static final String CALCULATION_VIEW = "CALCULATIONVIEW";
+  public static final String PROPAGATE_HINTS = "PROPAGATE_HINTS";
 }

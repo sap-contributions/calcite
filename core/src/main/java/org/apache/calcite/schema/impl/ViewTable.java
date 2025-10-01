@@ -16,7 +16,7 @@
  */
 package org.apache.calcite.schema.impl;
 
-import java.util.Optional;
+import java.util.HashSet;
 
 import org.apache.calcite.adapter.java.AbstractQueryableTable;
 import org.apache.calcite.jdbc.CalciteSchema;
@@ -43,6 +43,10 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.lang.reflect.Type;
 import java.util.List;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
+
+import static org.apache.calcite.plan.Hints.PROPAGATE_HINTS;
 
 /**
  * Table whose contents are defined using an SQL statement.
@@ -133,6 +137,24 @@ public class ViewTable
       final RelRoot root =
           context.expandView(rowType, queryString, schemaPath, viewPath);
       final RelNode rel = RelOptUtil.createCastRel(root.rel, rowType, true);
+      Predicate<RelHint> hintFilter =  rel instanceof Hintable
+          ? ((Hintable)rel).getHints().stream()
+            .filter(hint -> hint.hintName.equals(PROPAGATE_HINTS))
+            .findAny()
+            .map(it -> new HashSet<>(it.listOptions))
+            .map(it ->  (Predicate<RelHint>) hint -> {
+              switch(hint.hintName) {
+              case "PARAMETERS":
+                return true;
+              case "ANONYMIZE":
+                return true;
+              default:
+                return it.contains(hint.hintName);
+              }
+            })
+            .orElse(hint -> true)
+          : hint -> true;
+
       // Expand any views
       final RelNode rel2 =
           rel.accept(new RelShuttleImpl() {
@@ -143,12 +165,9 @@ public class ViewTable
               if (translatableTable != null) {
                 RelNode result = translatableTable.toRel(context, table);
                 if ( result instanceof Hintable) {
-                  Optional<RelHint> parameter = scan.getHints().stream()
-                    .filter(hint -> hint.hintName.equals("PARAMETERS") || hint.hintName.equals("ANONYMIZE"))
-                    .findAny();
-                  if ( parameter.isPresent()) {
-                    result = ((Hintable)result).attachHints(ImmutableList.of(parameter.get()));
-                  }
+                  result = ((Hintable)result).attachHints(scan.getHints().stream()
+                      .filter(hintFilter)
+                      .collect(Collectors.toList()));
                 }
                 return result;
               }
