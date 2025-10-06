@@ -137,23 +137,15 @@ public class ViewTable
       final RelRoot root =
           context.expandView(rowType, queryString, schemaPath, viewPath);
       final RelNode rel = RelOptUtil.createCastRel(root.rel, rowType, true);
+      Predicate<RelHint> oldHintFilter = hint -> "PARAMETERS".equals(hint.hintName) || "ANONYMIZE".equals(hint.hintName);
       Predicate<RelHint> hintFilter =  rel instanceof Hintable
           ? ((Hintable)rel).getHints().stream()
             .filter(hint -> hint.hintName.equals(PROPAGATE_HINTS))
             .findAny()
             .map(it -> new HashSet<>(it.listOptions))
-            .map(it ->  (Predicate<RelHint>) hint -> {
-              switch(hint.hintName) {
-              case "PARAMETERS":
-                return true;
-              case "ANONYMIZE":
-                return true;
-              default:
-                return it.contains(hint.hintName);
-              }
-            })
-            .orElse(hint -> true)
-          : hint -> true;
+            .map(it -> oldHintFilter.or(hint -> it.contains(hint.hintName)))
+            .orElse(oldHintFilter)
+          : oldHintFilter;
 
       // Expand any views
       final RelNode rel2 =
