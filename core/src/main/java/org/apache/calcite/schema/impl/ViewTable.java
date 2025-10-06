@@ -134,12 +134,11 @@ public class ViewTable
   private RelRoot expandView(RelOptTable.ToRelContext context,
       RelDataType rowType, String queryString) {
     try {
-      final RelRoot root =
-          context.expandView(rowType, queryString, schemaPath, viewPath);
+      final RelRoot root = context.expandView(rowType, queryString, schemaPath, viewPath);
       final RelNode rel = RelOptUtil.createCastRel(root.rel, rowType, true);
       Predicate<RelHint> oldHintFilter = hint -> "PARAMETERS".equals(hint.hintName) || "ANONYMIZE".equals(hint.hintName);
-      Predicate<RelHint> hintFilter =  rel instanceof Hintable
-          ? ((Hintable)rel).getHints().stream()
+      Predicate<RelHint> hintFilter =  root.rel instanceof Hintable
+          ? ((Hintable)root.rel).getHints().stream()
             .filter(hint -> hint.hintName.equals(PROPAGATE_HINTS))
             .findAny()
             .map(it -> new HashSet<>(it.listOptions))
