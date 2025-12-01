@@ -91,6 +91,8 @@ import static org.apache.calcite.linq4j.Nullness.castNonNull;
 
 import static java.util.Objects.requireNonNull;
 
+import static org.apache.calcite.runtime.Hook.AFTER_OPTIMIZATION;
+
 /**
  * VolcanoPlanner optimizes queries by transforming expressions selectively
  * according to a dynamic programming algorithm.
@@ -533,6 +535,7 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
       LOGGER.info(sw.toString());
     }
     dumpRuleAttemptsInfo();
+    AFTER_OPTIMIZATION.run(root);
     RelNode cheapest = root.buildCheapestPlan(this);
     if (LOGGER.isDebugEnabled()) {
       LOGGER.debug(
