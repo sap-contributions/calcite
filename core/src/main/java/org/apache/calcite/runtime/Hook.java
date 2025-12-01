@@ -88,6 +88,9 @@ public enum Hook {
   /** Called to create a Program to optimize the statement. */
   PROGRAM,
 
+  /** Called to create a Program to optimize the statement. */
+  AFTER_OPTIMIZATION,
+
   /** Called when materialization is created. */
   CREATE_MATERIALIZATION,
 

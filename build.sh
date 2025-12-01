@@ -31,7 +31,7 @@ VERSION=1.39.0
 
 for module in linq4j core;
 do
-  ./gradlew :${module}:clean :${module}:publishToMavenLocal
+  ./gradlew :${module}:clean -x :core:javadoc :${module}:publishToMavenLocal
    mvn install:install-file \
       -Dfile=${module}/build/libs/calcite-${module}-$VERSION-SNAPSHOT.jar \
       -DgroupId=org.apache.calcite \
