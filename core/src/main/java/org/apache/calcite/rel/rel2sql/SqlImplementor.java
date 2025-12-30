@@ -28,12 +28,7 @@ import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelFieldCollation;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.SingleRel;
-import org.apache.calcite.rel.core.Aggregate;
-import org.apache.calcite.rel.core.AggregateCall;
-import org.apache.calcite.rel.core.CorrelationId;
-import org.apache.calcite.rel.core.JoinRelType;
-import org.apache.calcite.rel.core.Project;
-import org.apache.calcite.rel.core.Window;
+import org.apache.calcite.rel.core.*;
 import org.apache.calcite.rel.rules.AggregateProjectConstantToDummyJoinRule;
 import org.apache.calcite.rel.rules.CoreRules;
 import org.apache.calcite.rel.rules.FullToLeftAndRightJoinRule;
@@ -99,7 +94,6 @@ import com.google.common.collect.RangeSet;
 import org.checkerframework.checker.initialization.qual.UnknownInitialization;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-import java.awt.event.FocusEvent;
 import java.math.BigDecimal;
 import java.util.AbstractList;
 import java.util.ArrayDeque;
@@ -2018,6 +2012,19 @@ public abstract class SqlImplementor {
           return true;
         }
       }
+      if (rel instanceof Project && !dialect.supportsGroupedColumnsInCalculations()) {
+        Project project = ((Project) rel);
+        ImmutableBitSet groupSet = getGroupSet(project.getInput());
+        for (RexNode rex : project.getProjects()) {
+          if (rex instanceof RexCall) {
+            for (int groupSetEntry : groupSet) {
+              if (RexUtil.containsInputRef(rex, groupSetEntry)) {
+                return true;
+              }
+            }
+          }
+        }
+      }
 
       if (rel instanceof Project
           && clauses.contains(Clause.HAVING)
@@ -2107,6 +2114,16 @@ public abstract class SqlImplementor {
       }
 
       return false;
+    }
+
+    private ImmutableBitSet getGroupSet(RelNode rel) {
+      if (rel instanceof Aggregate) {
+        return ((Aggregate) rel).getGroupSet();
+      }
+      if (rel instanceof Sort) {
+        return getGroupSet(((Sort) rel).getInput());
+      }
+      return ImmutableBitSet.of();
     }
 
     /**

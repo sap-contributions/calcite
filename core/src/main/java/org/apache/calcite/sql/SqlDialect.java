@@ -429,6 +429,10 @@ public class SqlDialect {
     return buf.toString();
   }
 
+  public boolean supportsGroupedColumnsInCalculations() {
+    return true;
+  }
+
   /** Appends a string literal to a buffer.
    *
    * @param buf Buffer
