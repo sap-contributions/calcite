@@ -899,6 +899,26 @@ public class RexUtil {
     }
   }
 
+  public static boolean containsInputRef(
+      RexNode node, int inputRefIndex) {
+    try {
+      RexVisitor<Void> visitor =
+          new RexVisitorImpl<Void>(true) {
+            @Override public Void visitInputRef(RexInputRef inputRef) {
+              if (inputRef.index ==inputRefIndex) {
+                throw new Util.FoundOne(inputRef);
+              }
+              return null;
+            }
+          };
+      node.accept(visitor);
+      return false;
+    } catch (Util.FoundOne e) {
+      Util.swallow(e, null);
+      return true;
+    }
+  }
+
   /**
    * Returns whether a given tree contains any
    * {@link org.apache.calcite.rex.RexFieldAccess} nodes.
