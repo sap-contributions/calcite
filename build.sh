@@ -18,16 +18,11 @@
 set -e
 VERSION=1.41.0
 
-# Java 21 doesn't suppport Java 8
-#if [ -d /Library/Java/JavaVirtualMachines/sapmachine-jdk-17.0.11.jdk/Contents/Home ]; then
-#  export JAVA_HOME=/Library/Java/JavaVirtualMachines/sapmachine-jdk-17.0.11.jdk/Contents/Home
-#  export PATH=$JAVA_HOME/bin:$PATH
-#fi
 
-#if [ -d /Library/Java/JavaVirtualMachines/sapmachine-17.jdk/Contents/Home ]; then
-#  export JAVA_HOME=/Library/Java/JavaVirtualMachines/sapmachine-17.jdk/Contents/Home
-#  export PATH=$JAVA_HOME/bin:$PATH
-#fi
+if [ -d /Library/Java/JavaVirtualMachines/sapmachine-jdk-17.0.17.jdk/Contents/Home ]; then
+  export JAVA_HOME=/Library/Java/JavaVirtualMachines/sapmachine-jdk-17.0.17.jdk/Contents/Home
+  export PATH=$JAVA_HOME/bin:$PATH
+fi
 
 for module in linq4j core;
 do
