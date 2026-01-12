@@ -41,6 +41,8 @@ import org.apache.calcite.tools.RelBuilderFactory;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.Util;
 
+import com.google.common.base.Suppliers;
+
 import org.immutables.value.Value;
 
 import java.util.ArrayList;
@@ -139,7 +141,7 @@ public class EnumerableBatchNestedLoopJoinRule
 
     final RelDataType leftRowType = join.getLeft().getRowType();
     int batchSize = config.batchSize();
-    Supplier<RexNode> corrVarSupplier = () -> {
+    com.google.common.base.Supplier<RexNode> corrVarSupplier = () -> {
       CorrelationId correlationId = cluster.createCorrel();
       correlationIds.add(correlationId);
       return rexBuilder.makeCorrel(leftRowType,correlationId);
@@ -169,9 +171,10 @@ public class EnumerableBatchNestedLoopJoinRule
     }
     // Add batchSize-1 other conditions
     for (int i = 1; i < batchSize; i++) {
+      Supplier<RexNode> batchCorrVarSupplier = Suppliers.memoize(corrVarSupplier);
       final RexNode condition2 = condition.accept(new RexShuttle() {
         @Override public RexNode visitCorrelVariable(RexCorrelVariable variable) {
-          return variable.equals(corrVar0) ? corrVarSupplier.get() : variable;
+          return variable.equals(corrVar0) ? batchCorrVarSupplier.get() : variable;
         }
       });
       conditionList.add(condition2);
