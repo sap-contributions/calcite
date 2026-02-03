@@ -17,6 +17,7 @@
 package org.apache.calcite.plan.volcano;
 
 import org.apache.calcite.avatica.util.Spaces;
+import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelVisitor;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
@@ -38,6 +39,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 
 import static java.util.Objects.requireNonNull;
 
@@ -170,13 +172,14 @@ class Dumpers {
     }
   }
 
-  static void dumpGraphviz(VolcanoPlanner planner, PrintWriter pw) {
+  static void dumpGraphviz(VolcanoPlanner planner, PrintWriter pw, Function<RelOptCost, String> costConverter) {
     Ordering<RelSet> ordering = Ordering.from(Comparator.comparingInt(o -> o.id));
     Set<RelNode> activeRels = new HashSet<>();
     for (VolcanoRuleCall volcanoRuleCall : planner.ruleCallStack) {
       activeRels.addAll(Arrays.asList(volcanoRuleCall.rels));
     }
     pw.println("digraph G {");
+    pw.println("\tnode [width=0.1, height=0.1,fontname=\"Comic Sans MS\",fontsize=8]");
     pw.println("\troot [style=filled,label=\"Root\"];");
     PartiallyOrderedSet<RelSubset> subsetPoset =
         new PartiallyOrderedSet<>(
@@ -186,7 +189,7 @@ class Dumpers {
       pw.print("\tsubgraph cluster");
       pw.print(set.id);
       pw.println("{");
-      pw.print("\t\tlabel=");
+      pw.print("\t\ttooltip=");
       Util.printJavaString(pw, "Set " + set.id + " "
           + set.subsets.get(0).getRowType(), false);
       pw.print(";\n");
@@ -195,6 +198,9 @@ class Dumpers {
         pw.print(rel.getId());
         pw.print(" [label=");
         RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
+        RelOptCost cost = planner.getCost(rel, mq);
+        Util.printJavaString(pw,rel.getRelTypeName() + "\n" + costConverter.apply(cost),false);
+        pw.println(",tooltip=");
 
         // Note: rel traitset could be different from its subset.traitset
         // It can happen due to RelTraitset#simplify
@@ -220,12 +226,12 @@ class Dumpers {
         Util.printJavaString(pw,
             title
                 + "\nrows=" + mq.getRowCount(rel) + ", cost="
-                + planner.getCost(rel, mq), false);
+                + cost, false);
         if (!(rel instanceof AbstractConverter)) {
           nonEmptySubsets.add(relSubset);
         }
         if (relSubset.best == rel) {
-          pw.print(",color=blue");
+          pw.print(",fillcolor=aquamarine");
         }
         if (activeRels.contains(rel)) {
           pw.print(",style=dashed");
@@ -239,7 +245,7 @@ class Dumpers {
         subsetPoset.add(subset);
         pw.print("\t\tsubset");
         pw.print(subset.getId());
-        pw.print(" [label=");
+        pw.print(" [label=\"\",tooltip=");
         Util.printJavaString(pw, subset.toString(), false);
         boolean empty = !nonEmptySubsets.contains(subset);
         if (empty) {
@@ -293,7 +299,7 @@ class Dumpers {
         pw.print(" -> rel");
         pw.print(rel.getId());
         if (relSubset.best == rel) {
-          pw.print("[color=blue]");
+          pw.print("[color=aquamarine]");
         }
         pw.print(";");
         List<RelNode> inputs = rel.getInputs();
@@ -308,7 +314,7 @@ class Dumpers {
             char sep = '[';
             if (relSubset.best == rel) {
               pw.print(sep);
-              pw.print("color=blue");
+              pw.print("color=aquamarine");
               sep = ',';
             }
             if (inputs.size() > 1) {

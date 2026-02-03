@@ -82,6 +82,7 @@ import java.util.Map;
 import java.util.PriorityQueue;
 import java.util.Set;
 import java.util.Stack;
+import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -535,7 +536,7 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
       LOGGER.info(sw.toString());
     }
     dumpRuleAttemptsInfo();
-    AFTER_OPTIMIZATION.run(root);
+    AFTER_OPTIMIZATION.run(this);
     RelNode cheapest = root.buildCheapestPlan(this);
     if (LOGGER.isDebugEnabled()) {
       LOGGER.debug(
@@ -875,7 +876,7 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
       if (CalciteSystemProperty.DUMP_GRAPHVIZ.value()) {
         pw.println();
         pw.println("Graphviz:");
-        Dumpers.dumpGraphviz(this, pw);
+        Dumpers.dumpGraphviz(this, pw, it -> it.toString());
       }
     } catch (Exception | AssertionError e) {
       pw.println("Error when dumping plan state: \n"
@@ -883,10 +884,14 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
     }
   }
 
+  public  void dumpGraphviz(PrintWriter pw, Function<RelOptCost, String> costConverter) {
+    Dumpers.dumpGraphviz(this, pw, costConverter);
+  }
+
   public String toDot() {
     StringWriter sw = new StringWriter();
     PrintWriter pw = new PrintWriter(sw);
-    Dumpers.dumpGraphviz(this, pw);
+    Dumpers.dumpGraphviz(this, pw,it -> it.toString());
     pw.flush();
     return sw.toString();
   }
