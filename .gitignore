@@ -25,6 +25,7 @@
 /buildSrc/build
 /buildSrc/subprojects/*/build
 /site/.jekyll-cache
+CLAUDE.md
 
 # VSCode Java plugin
 /example/*/bin
