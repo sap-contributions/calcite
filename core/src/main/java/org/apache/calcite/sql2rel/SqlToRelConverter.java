@@ -2557,6 +2557,7 @@ public class SqlToRelConverter {
 
   /**
    * Recursively add CorrelationId to Project$variablesSet.
+   *
    * @param root RelNode
    * @param correlationUse CorrelationUse
    * @param relBuilder RelBuilder

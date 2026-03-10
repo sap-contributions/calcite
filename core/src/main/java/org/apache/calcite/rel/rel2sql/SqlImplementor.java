@@ -2100,7 +2100,7 @@ public abstract class SqlImplementor {
           final Project project = (Project) agg.getInput();
           boolean hasDynamicParamInGroupBy = false;
           final DynamicParamVisitor finder = new DynamicParamVisitor();
-          for ( int group: agg.getGroupSet()) {
+          for (int group : agg.getGroupSet()) {
             hasDynamicParamInGroupBy = hasDynamicParamInGroupBy || project.getProjects().get(group).accept(finder);
           }
           if ( hasDynamicParamInGroupBy) {
