@@ -1033,7 +1033,7 @@ public class JdbcRules {
     private static boolean isSimpleProject(RelNode input) {
       if (input instanceof RelSubset) {
         RelSubset subset = (RelSubset) input;
-        for (RelNode node :  subset.getRels()) {
+        for (RelNode node : subset.getRels()) {
           if (isSimpleProject(node)) {
             return true;
           }

@@ -4096,7 +4096,7 @@ class SqlToRelConverterTest extends SqlToRelTestBase {
   }
 
   @Test void testCorrelationInProjectionWithCorrelatedProjection() {
-    final String sql = "select cardinality(arr) from"
+    final String sql = "select cardinality(arr) from\n"
         + "(select array(select e.deptno) arr\n"
         + "from (select deptno, ename from emp) e)";
     sql(sql).withExpand(false).withDecorrelate(false).ok();
