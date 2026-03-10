@@ -32,6 +32,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.io.BufferedReader;
@@ -295,7 +296,9 @@ class LintTest {
    *
    * <p>N needs to be large enough to verify multi-commit PRs, but not so large
    * that it fails because of historical commits. */
-  @Test void testLintLog() {
+  @Test
+  @Disabled("Custom SAP git environment")
+  void testLintLog() {
     assumeTrue(TestUnsafe.haveGit(), "Invalid git environment");
 
     int n = 7;
