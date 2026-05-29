@@ -20,7 +20,7 @@ VERSION=1.42.0
 
 JDK=(/Library/Java/JavaVirtualMachines/sapmachine-jdk-17*)
 if [ -d "${JDK[0]}" ]; then
-  export JAVA_HOME=""${JDK[0]}/Contents/Home""
+  export JAVA_HOME="${JDK[0]}/Contents/Home"
   export PATH=$JAVA_HOME/bin:$PATH
 fi
 
