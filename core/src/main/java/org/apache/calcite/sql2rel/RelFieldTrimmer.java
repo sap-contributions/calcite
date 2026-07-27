@@ -847,7 +847,7 @@ public class RelFieldTrimmer implements ReflectiveVisitor {
       int markIndex = join.getRowType().getFieldCount() - 1;
       fieldsUsed = fieldsUsed.except(ImmutableBitSet.of(markIndex));
     }
-    if ( withinDistinctAggregation ) {
+    if ( withinDistinctAggregation) {
       final int leftFieldCount = join.getLeft().getRowType().getFieldCount();
       if (join.getJoinType() == JoinRelType.LEFT) {
         if (fieldsUsed.allMatch(i -> i < leftFieldCount)) {

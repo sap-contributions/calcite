@@ -80,8 +80,7 @@ class SqlAdvisorJdbcTest {
     connection.close();
   }
 
-  @Test
-  @Disabled("broken by SAP changes")
+  @Test @Disabled("broken by SAP changes")
   void testSqlAdvisorGetHintsFunction() throws SQLException {
     adviseSql(1, "select e.e^ from \"emps\" e",
         CalciteAssert.checkResultUnordered(
@@ -89,8 +88,7 @@ class SqlAdvisorJdbcTest {
             "id=empid; names=[empid]; type=COLUMN"));
   }
 
-  @Test
-  @Disabled("broken by SAP changes")
+  @Test @Disabled("broken by SAP changes")
   void testSqlAdvisorGetHintsFunction2() throws SQLException {
     adviseSql(2, "select [e].e^ from [emps] e",
         CalciteAssert.checkResultUnordered(
@@ -98,8 +96,7 @@ class SqlAdvisorJdbcTest {
             "id=empid; names=[empid]; type=COLUMN; replacement=empid"));
   }
 
-  @Test
-  @Disabled("broken by SAP changes")
+  @Test @Disabled("broken by SAP changes")
   void testSqlAdvisorNonExistingColumn() throws SQLException {
     adviseSql(1, "select e.empdid_wrong_name.^ from \"hr\".\"emps\" e",
         CalciteAssert.checkResultUnordered(
@@ -107,8 +104,7 @@ class SqlAdvisorJdbcTest {
             "id=; names=null; type=MATCH"));
   }
 
-  @Test
-  @Disabled("broken by SAP changes")
+  @Test @Disabled("broken by SAP changes")
   void testSqlAdvisorNonStructColumn() throws SQLException {
     adviseSql(1, "select e.\"empid\".^ from \"hr\".\"emps\" e",
         CalciteAssert.checkResultUnordered(
@@ -116,8 +112,7 @@ class SqlAdvisorJdbcTest {
             "id=; names=null; type=MATCH"));
   }
 
-  @Test
-  @Disabled("broken by SAP changes")
+  @Test @Disabled("broken by SAP changes")
   void testSqlAdvisorSubSchema() throws SQLException {
     adviseSql(1, "select * from \"hr\".^.test_test_test",
         CalciteAssert.checkResultUnordered(
@@ -129,8 +124,7 @@ class SqlAdvisorJdbcTest {
             "id=hr; names=[hr]; type=SCHEMA"));
   }
 
-  @Test
-  @Disabled("broken by SAP changes")
+  @Test @Disabled("broken by SAP changes")
   void testSqlAdvisorSubSchema2() throws SQLException {
     adviseSql(2, "select * from [hr].^.test_test_test",
         CalciteAssert.checkResultUnordered(
@@ -142,8 +136,7 @@ class SqlAdvisorJdbcTest {
             "id=hr; names=[hr]; type=SCHEMA; replacement=hr"));
   }
 
-  @Test
-  @Disabled("broken by SAP changes")
+  @Test @Disabled("broken by SAP changes")
   void testSqlAdvisorTableInSchema() throws SQLException {
     adviseSql(1, "select * from \"hr\".^",
         CalciteAssert.checkResultUnordered(
@@ -158,8 +151,7 @@ class SqlAdvisorJdbcTest {
   /**
    * Tests {@link org.apache.calcite.sql.advise.SqlAdvisorGetHintsFunction}.
    */
-  @Test
-  @Disabled("broken by SAP changes")
+  @Test @Disabled("broken by SAP changes")
   void testSqlAdvisorSchemaNames() throws SQLException {
     adviseSql(1, "select empid from \"emps\" e, ^",
         CalciteAssert.checkResultUnordered(

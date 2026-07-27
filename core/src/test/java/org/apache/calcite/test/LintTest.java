@@ -369,8 +369,7 @@ class LintTest {
    *
    * <p>N needs to be large enough to verify multi-commit PRs, but not so large
    * that it fails because of historical commits. */
-  @Test
-  @Disabled("Custom SAP git environment")
+  @Test @Disabled("Custom SAP git environment")
   void testLintLog() {
     assumeTrue(TestUnsafe.haveGit(), "Invalid git environment");
 

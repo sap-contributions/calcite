@@ -49,7 +49,6 @@ import org.apache.calcite.rel.type.RelDataTypeSystemImpl;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
-import org.apache.calcite.schema.lookup.LikePattern;
 import org.apache.calcite.schema.ModifiableTable;
 import org.apache.calcite.schema.Path;
 import org.apache.calcite.schema.ProjectableFilterableTable;

@@ -21,7 +21,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
-import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
@@ -102,8 +101,7 @@ public class PostgresqlDateTimeFormatterTest {
     assertThat(toCharUs("FM" + pattern + "th", hourTwo), is("2nd"));
   }
 
-    @Test
-    @Disabled("broken by SAP changes")
+    @Test @Disabled("broken by SAP changes")
     void testLiteral() throws Exception {
       final ZonedDateTime time = createDateTime(2024, 1, 1, 0, 0, 0, 0);
       assertThat(toTimestamp("2024-01-01 00:00:00" , "YYYY-MM-DD HH24:MI:SS"), is(time));
@@ -1561,7 +1559,8 @@ public class PostgresqlDateTimeFormatterTest {
 
   @Test void testToTimestampMonthLowerCase() throws Exception {
     assertThat(toTimestamp("january", "month"), is(DAY_1_CE));
-    assertThat(toTimestamp("march",
+    assertThat(
+        toTimestamp("march",
 
             "month"), is(DAY_1_CE.plusMonths(2)));
     assertThat(toTimestamp("november", "month"), is(DAY_1_CE.plusMonths(10)));

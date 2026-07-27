@@ -374,8 +374,7 @@ class EnumerableJoinTest {
    * <a href="https://issues.apache.org/jira/browse/CALCITE-3820">[CALCITE-3820]
    * EnumerableDefaults#orderBy should be lazily computed + support enumerator
    * re-initialization</a>. */
-  @Test
-  @Disabled("broken by SAP changes")
+  @Test @Disabled("broken by SAP changes")
   void testRepeatUnionWithMergeJoin() {
     tester(false, new HierarchySchema())
         .withHook(Hook.PLANNER, (Consumer<RelOptPlanner>) planner -> {

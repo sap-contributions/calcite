@@ -2525,20 +2525,16 @@ public abstract class SqlImplementor {
       public DynamicParamVisitor() {
       }
 
-      @Override
-      public Boolean visitInputRef(RexInputRef inputRef) {
+      @Override public Boolean visitInputRef(RexInputRef inputRef) {
         return false;
       }
-      @Override
-      public Boolean visitLocalRef(RexLocalRef localRef) {
+      @Override public Boolean visitLocalRef(RexLocalRef localRef) {
         return false;
       }
-      @Override
-      public Boolean visitLiteral(RexLiteral literal) {
+      @Override public Boolean visitLiteral(RexLiteral literal) {
         return false;
       }
-      @Override
-      public Boolean visitCorrelVariable(RexCorrelVariable correlVariable) {
+      @Override public Boolean visitCorrelVariable(RexCorrelVariable correlVariable) {
         return false;
       }
       @Override public Boolean visitDynamicParam(RexDynamicParam dynamicParam) {
@@ -2569,18 +2565,15 @@ public abstract class SqlImplementor {
         return false;
       }
 
-      @Override
-      public Boolean visitLambda(RexLambda lambda) {
+      @Override public Boolean visitLambda(RexLambda lambda) {
         return false;
       }
 
-      @Override
-      public Boolean visitLambdaRef(RexLambdaRef lambdaRef) {
+      @Override public Boolean visitLambdaRef(RexLambdaRef lambdaRef) {
         return false;
       }
 
-      @Override
-      public Boolean visitNodeAndFieldIndex(RexNodeAndFieldIndex nodeAndFieldIndex) {
+      @Override public Boolean visitNodeAndFieldIndex(RexNodeAndFieldIndex nodeAndFieldIndex) {
         return false;
       }
 

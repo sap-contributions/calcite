@@ -14,7 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.calcite.schema.lookup;
 
 import org.apache.calcite.linq4j.function.Predicate1;
@@ -38,14 +37,12 @@ public class SimpleLookup<T> extends IgnoreCaseLookup<T> {
 
   @SuppressWarnings("deprecation")
   @Nullable
-  @Override
-  public T get(String name) {
+  @Override public T get(String name) {
     return get.apply(name);
   }
 
   @SuppressWarnings("deprecation")
-  @Override
-  public @Nullable Set<String> getNames(LikePattern pattern) {
+  @Override public @Nullable Set<String> getNames(LikePattern pattern) {
     final Predicate1<String> matcher = pattern.matcher();
     return getNames.get().stream()
         .filter(name -> matcher.apply(name))

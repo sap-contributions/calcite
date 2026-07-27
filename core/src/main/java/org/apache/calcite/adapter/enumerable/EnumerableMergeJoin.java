@@ -522,8 +522,9 @@ public class EnumerableMergeJoin extends Join implements EnumerableRel {
     final RelCollation collation = RelCollations.of(fieldCollations);
     final Expression comparator = comparatorPhysType.generateMergeJoinComparator(collation);
     if (joinType == JoinRelType.INNER || joinType == JoinRelType.SEMI) {
-     leftExpression = Expressions.call(BuiltInMethod.MERGE_JOIN_NOT_NULL_ENUMERABLE.method, leftExpression,
-          Expressions.lambda(
+     leftExpression =
+          Expressions.call(
+              BuiltInMethod.MERGE_JOIN_NOT_NULL_ENUMERABLE.method, leftExpression, Expressions.lambda(
               leftKeyPhysType.record(leftExpressions), left_));
     }
     return implementor.result(

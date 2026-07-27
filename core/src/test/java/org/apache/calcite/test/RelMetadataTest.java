@@ -5090,8 +5090,7 @@ public class RelMetadataTest {
             Aggregate.class, 1);
   }
 
-  @Test
-  @Disabled("broken by SAP changes")
+  @Test @Disabled("broken by SAP changes")
   void testNodeTypeCountAggregateEmptyKeyOnEmptyTable() {
     final String sql = "select count(*) from (select * from emp limit 0)";
     sql(sql)
@@ -5101,8 +5100,7 @@ public class RelMetadataTest {
             Sort.class, 1);
   }
 
-  @Test
-  @Disabled("broken by SAP changes")
+  @Test @Disabled("broken by SAP changes")
   void testNodeTypeCountFilterAggregateEmptyKey() {
     final String sql = "select count(*) from emp where 1 = 0";
     sql(sql)

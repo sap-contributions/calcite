@@ -14,7 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.calcite.linq4j;
 
 import org.apache.calcite.linq4j.function.Function1;
@@ -37,17 +36,14 @@ public class MergeJoinNotNullEnumerable<T, K> extends AbstractEnumerable<T> {
     return new MergeJoinNotNullEnumerable<>(enumerable, keySelector);
   }
 
-  @Override
-  public Enumerator<T> enumerator() {
+  @Override public Enumerator<T> enumerator() {
     Enumerator<T> enumerator = enumerable.enumerator();
     return new Enumerator<T>() {
-      @Override
-      public T current() {
+      @Override public T current() {
         return enumerator.current();
       }
 
-      @Override
-      public boolean moveNext() {
+      @Override public boolean moveNext() {
         boolean next = enumerator.moveNext();
         if (!skipNulls) {
           return next;
@@ -73,13 +69,11 @@ public class MergeJoinNotNullEnumerable<T, K> extends AbstractEnumerable<T> {
         return next;
       }
 
-      @Override
-      public void reset() {
+      @Override public void reset() {
         enumerator.reset();
       }
 
-      @Override
-      public void close() {
+      @Override public void close() {
         enumerator.close();
       }
     };

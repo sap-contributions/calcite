@@ -93,8 +93,7 @@ public class StreamTest {
       + "   ]\n"
       + "}";
 
-  @Test
-  @Disabled("broken by SAP changes")
+  @Test @Disabled("broken by SAP changes")
   void testStream() {
     CalciteAssert.model(STREAM_MODEL)
         .withDefaultSchema("STREAMS")
@@ -110,8 +109,7 @@ public class StreamTest {
                 "ROWTIME=2015-02-15 10:24:15; ID=2; PRODUCT=paper; UNITS=5"));
   }
 
-  @Test
-  @Disabled("broken by SAP changes")
+  @Test @Disabled("broken by SAP changes")
   void testStreamFilterProject() {
     CalciteAssert.model(STREAM_MODEL)
         .withDefaultSchema("STREAMS")
@@ -131,8 +129,7 @@ public class StreamTest {
                 "PRODUCT=brush"));
   }
 
-  @Test
-  @Disabled("broken by SAP changes")
+  @Test @Disabled("broken by SAP changes")
   void testStreamGroupByHaving() {
     CalciteAssert.model(STREAM_MODEL)
         .withDefaultSchema("STREAMS")
@@ -157,8 +154,7 @@ public class StreamTest {
             startsWith("ROWTIME=2015-02-15 10:00:00; PRODUCT=paint; C=2"));
   }
 
-  @Test
-  @Disabled("broken by SAP changes")
+  @Test @Disabled("broken by SAP changes")
   void testStreamOrderBy() {
     CalciteAssert.model(STREAM_MODEL)
         .withDefaultSchema("STREAMS")
@@ -219,8 +215,7 @@ public class StreamTest {
    * <a href="https://issues.apache.org/jira/browse/CALCITE-809">[CALCITE-809]
    * TableScan does not support large/infinite scans</a>.
    */
-  @Test
-  @Disabled("broken by SAP changes")
+  @Test @Disabled("broken by SAP changes")
   void testInfiniteStreamsDoNotBufferInMemory() {
     CalciteAssert.model(STREAM_MODEL)
         .withDefaultSchema(INFINITE_STREAM_SCHEMA_NAME)
@@ -264,8 +259,7 @@ public class StreamTest {
         });
   }
 
-  @Test
-  @Disabled("broken by SAP changes")
+  @Test @Disabled("broken by SAP changes")
   void testStreamToRelationJoin() {
     CalciteAssert.model(STREAM_JOINS_MODEL)
         .withDefaultSchema(STREAM_JOINS_SCHEMA_NAME)

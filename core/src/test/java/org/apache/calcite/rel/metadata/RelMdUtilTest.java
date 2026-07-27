@@ -121,8 +121,7 @@ public class RelMdUtilTest {
   /** Test case for
    * <a href="https://issues.apache.org/jira/browse/CALCITE-6749">[CALCITE-6749]
    * RelMdUtil#setAggChildKeys may return an incorrect result</a>. */
-  @Test
-  @Disabled("broken by SAP changes")
+  @Test @Disabled("broken by SAP changes")
   void testSetAggChildKeys() {
     Frameworks.withPlanner((cluster, relOptSchema, rootSchema) -> {
       RelNode rel = sql("select d.deptno, count(distinct e.job)\n"

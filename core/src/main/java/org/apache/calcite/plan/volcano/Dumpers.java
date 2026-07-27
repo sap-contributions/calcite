@@ -199,7 +199,8 @@ class Dumpers {
         pw.print(" [label=");
         RelMetadataQuery mq = rel.getCluster().getMetadataQuery();
         RelOptCost cost = planner.getCost(rel, mq);
-        Util.printJavaString(pw,rel.getRelTypeName() + "\n" + costConverter.apply(cost),false);
+        Util.printJavaString(pw,rel.getRelTypeName() + "\n"
+  + costConverter.apply(cost),false);
         pw.println(",tooltip=");
 
         // Note: rel traitset could be different from its subset.traitset

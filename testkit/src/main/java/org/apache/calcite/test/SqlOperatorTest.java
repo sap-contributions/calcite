@@ -12779,8 +12779,7 @@ public class SqlOperatorTest {
     f.checkAgg("collect(DISTINCT x)", values, isSingle(2));
   }
 
-  @Test
-  @Disabled("broken by SAP changes")
+  @Test @Disabled("broken by SAP changes")
   void testListAggFunc() {
     final SqlOperatorFixture f = fixture();
     f.setFor(SqlStdOperatorTable.LISTAGG, VM_JAVA);
@@ -12807,8 +12806,7 @@ public class SqlOperatorTest {
     f.checkAgg("listagg(cast(x as CHAR))", values2, isSingle("0,1,2,3"));
   }
 
-  @Test
-  @Disabled("broken by SAP changes")
+  @Test @Disabled("broken by SAP changes")
   void testStringAggFunc() {
     final SqlOperatorFixture f = fixture();
     checkStringAggFunc(f.withLibrary(SqlLibrary.POSTGRESQL));
@@ -12867,8 +12865,7 @@ public class SqlOperatorTest {
         "Invalid number of arguments to function 'STRING_TO_ARRAY'.*", false);
   }
 
-  @Test
-  @Disabled("broken by SAP changes")
+  @Test @Disabled("broken by SAP changes")
   void testGroupConcatFunc() {
     final SqlOperatorFixture f = fixture();
     checkGroupConcatFunc(f.withLibrary(SqlLibrary.MYSQL));

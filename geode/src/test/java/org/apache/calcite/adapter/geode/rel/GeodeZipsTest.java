@@ -105,8 +105,7 @@ class GeodeZipsTest extends AbstractGeodeTest {
             + "      GeodeTableScan(table=[[geode, zips]])\n");
   }
 
-  @Test
-  @Disabled("broken by SAP changes")
+  @Test @Disabled("broken by SAP changes")
   void testGroupByRaw() {
     calciteAssert()
         .query("SELECT state as st, SUM(pop) po "
@@ -117,8 +116,7 @@ class GeodeZipsTest extends AbstractGeodeTest {
             + "    GeodeTableScan(table=[[geode, zips]])\n");
   }
 
-  @Test
-  @Disabled("broken by SAP changes")
+  @Test @Disabled("broken by SAP changes")
   void testGroupByRawWithAliases() {
     calciteAssert()
         .query("SELECT state AS st, SUM(pop) AS po "

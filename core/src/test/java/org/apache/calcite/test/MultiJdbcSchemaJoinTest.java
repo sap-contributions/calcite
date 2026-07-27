@@ -24,7 +24,6 @@ import org.apache.calcite.jdbc.CalciteConnection;
 import org.apache.calcite.jdbc.CalciteJdbc41Factory;
 import org.apache.calcite.jdbc.CalciteSchema;
 import org.apache.calcite.jdbc.Driver;
-import org.apache.calcite.schema.lookup.LikePattern;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.schema.lookup.LikePattern;
 import org.apache.calcite.test.schemata.hr.HrSchema;

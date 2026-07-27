@@ -47,8 +47,7 @@ import java.util.function.Consumer;
  */
 class EnumerableRepeatUnionTest {
 
-  @Test
-  @Disabled("broken by SAP changes")
+  @Test @Disabled("broken by SAP changes")
   void testGenerateNumbers() {
     CalciteAssert.that()
         .withRel(
@@ -74,8 +73,7 @@ class EnumerableRepeatUnionTest {
         .returnsOrdered("i=1", "i=2", "i=3", "i=4", "i=5", "i=6", "i=7", "i=8", "i=9", "i=10");
   }
 
-  @Test
-  @Disabled("broken by SAP changes")
+  @Test @Disabled("broken by SAP changes")
   void testGenerateNumbers2UsingSqlCheckPlan() {
     CalciteAssert.that()
         .with(CalciteConnectionProperty.LEX, Lex.JAVA)
@@ -99,8 +97,7 @@ class EnumerableRepeatUnionTest {
         .returnsOrdered("i=0", "i=1", "i=2", "i=3", "i=4", "i=5", "i=6", "i=7", "i=8", "i=9");
   }
 
-  @Test
-  @Disabled("broken by SAP changes")
+  @Test @Disabled("broken by SAP changes")
   void testGenerateNumbers2() {
     CalciteAssert.that()
         .withRel(
@@ -128,8 +125,7 @@ class EnumerableRepeatUnionTest {
         .returnsOrdered("i=0", "i=1", "i=2", "i=3", "i=4", "i=5", "i=6", "i=7", "i=8", "i=9");
   }
 
-  @Test
-  @Disabled("broken by SAP changes")
+  @Test @Disabled("broken by SAP changes")
   void testGenerateNumbers3() {
     CalciteAssert.that()
         .withRel(
@@ -167,8 +163,7 @@ class EnumerableRepeatUnionTest {
             "i=9; j=0");
   }
 
-  @Test
-  @Disabled("broken by SAP changes")
+  @Test @Disabled("broken by SAP changes")
   void testFactorial() {
     CalciteAssert.that()
         .withRel(
@@ -208,8 +203,7 @@ class EnumerableRepeatUnionTest {
             "n=7; fact=5040");
   }
 
-  @Test
-  @Disabled("broken by SAP changes")
+  @Test @Disabled("broken by SAP changes")
   void testGenerateNumbersNestedRecursion() {
     CalciteAssert.that()
         .withRel(
@@ -257,8 +251,7 @@ class EnumerableRepeatUnionTest {
   /** Test case for
    * <a href="https://issues.apache.org/jira/browse/CALCITE-4139">[CALCITE-4139]
    * Prevent NPE in ListTransientTable</a>. */
-  @Test
-  @Disabled("broken by SAP changes")
+  @Test @Disabled("broken by SAP changes")
   void testGenerateNumbersWithNull() {
     CalciteAssert.that()
         .withRel(
@@ -278,8 +271,7 @@ class EnumerableRepeatUnionTest {
         .returnsOrdered("i=1", "i=2", "i=null", "i=3", "i=2", "i=3", "i=3");
   }
 
-  @Test
-  @Disabled("broken by SAP changes")
+  @Test @Disabled("broken by SAP changes")
   void testRepeatUnionWithCorrelateWithTransientScanOnItsRightUsingSql() {
     CalciteAssert.that()
         .with(CalciteConnectionProperty.LEX, Lex.JAVA)
@@ -323,8 +315,7 @@ class EnumerableRepeatUnionTest {
   /** Test case for
    * <a href="https://issues.apache.org/jira/browse/CALCITE-4054">[CALCITE-4054]
    * RepeatUnion containing a Correlate with a transientScan on its RHS causes NPE</a>. */
-  @Test
-  @Disabled("broken by SAP changes")
+  @Test @Disabled("broken by SAP changes")
   void testRepeatUnionWithCorrelateWithTransientScanOnItsRight() {
     CalciteAssert.that()
         .with(CalciteConnectionProperty.LEX, Lex.JAVA)

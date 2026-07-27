@@ -55,8 +55,7 @@ class KafkaAdapterTest {
     }
   }
 
-  @Test
-  @Disabled("broken by SAP changes")
+  @Test @Disabled("broken by SAP changes")
   void testSelect() {
     assertModel(MODEL)
         .query("SELECT STREAM * FROM KAFKA.MOCKTABLE")
@@ -77,8 +76,7 @@ class KafkaAdapterTest {
             + "  BindableTableScan(table=[[KAFKA, MOCKTABLE, (STREAM)]])\n");
   }
 
-  @Test
-  @Disabled("broken by SAP changes")
+  @Test @Disabled("broken by SAP changes")
   void testFilterWithProject() {
     assertModel(MODEL)
         .with(CalciteConnectionProperty.TOPDOWN_OPT.camelName(), false)
@@ -94,8 +92,7 @@ class KafkaAdapterTest {
                 + "    BindableTableScan(table=[[KAFKA, MOCKTABLE, (STREAM)]])");
   }
 
-  @Test
-  @Disabled("broken by SAP changes")
+  @Test @Disabled("broken by SAP changes")
   void testCustRowConverter() {
     assertModel(MODEL)
         .query("SELECT STREAM * FROM KAFKA.MOCKTABLE_CUST_ROW_CONVERTER")

@@ -1576,8 +1576,7 @@ class JdbcAdapterTest {
         .returns("C=null\nC=null\nC=null\nC=null\nC=null\nC=null\nC=null\n");
   }
 
-  @Test
-  @Disabled("broken by SAP changes")
+  @Test @Disabled("broken by SAP changes")
   void testMerge() throws Exception {
     final String sql = "merge into \"foodmart\".\"expense_fact\"\n"
                        + "using (values(666, 42)) as vals(store_id, amount)\n"
@@ -1623,8 +1622,7 @@ class JdbcAdapterTest {
   /**
    * Test case for
    * <a href="https://issues.apache.org/jira/browse/CALCITE-6221">[CALCITE-6221]</a>.*/
-  @Test
-  @Disabled("was used to reproduce bug")
+  @Test @Disabled("was used to reproduce bug")
   void testUnknownColumn() {
     CalciteAssert.model(JdbcTest.SCOTT_MODEL)
         .query("SELECT\n"
@@ -1673,8 +1671,7 @@ class JdbcAdapterTest {
    * Test case for
    * <a href="https://issues.apache.org/jira/browse/CALCITE-4188">[CALCITE-4188]
    * Support EnumerableBatchNestedLoopJoin for JDBC</a>. */
-  @Test
-  @Disabled("was used to reproduce bug")
+  @Test @Disabled("was used to reproduce bug")
   void testBatchNestedLoopJoinPlan() {
     final String sql = "SELECT *\n"
         + "FROM \"s\".\"emps\" A\n"
@@ -1837,12 +1834,18 @@ class JdbcAdapterTest {
 
   @Test void testAmbiguousColumn() {
     CalciteAssert.model(JdbcTest.FOODMART_SCOTT_MODEL)
-        .query("select\n" +
-            "                  \"store_id\" \"latest_id\",\n" +
-            "                  max(\"store_type\") \"latest_store_type\"\n" +
-            "                from\n" +
-            "                  ( SELECT \"store_id\",\"store_type\" FROM \"foodmart\".\"store\") \n" +
-            "                group by\n" +
+        .query("select\n"
+  +
+            "                  \"store_id\" \"latest_id\",\n"
+  +
+            "                  max(\"store_type\") \"latest_store_type\"\n"
+  +
+            "                from\n"
+  +
+            "                  ( SELECT \"store_id\",\"store_type\" FROM \"foodmart\".\"store\") \n"
+  +
+            "                group by\n"
+  +
             "                  \"store_id\"")
         .runs()
         .enable(CalciteAssert.DB == CalciteAssert.DatabaseInstance.HSQLDB)

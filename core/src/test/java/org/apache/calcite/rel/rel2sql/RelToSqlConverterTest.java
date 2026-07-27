@@ -2011,8 +2011,7 @@ class RelToSqlConverterTest {
   /** Test case for
    * <a href="https://issues.apache.org/jira/browse/CALCITE-6785">[CALCITE-6785]
    * RelToSqlConverter generate wrong sql when UNNEST has a correlate variable</a>. */
-  @Test
-  @Disabled("broken by SAP correlate changes")
+  @Test @Disabled("broken by SAP correlate changes")
   void testUnnestWithCorrelate() {
     final String sql = "SELECT\n"
         + "    \"department_id\",\n"
@@ -9906,8 +9905,7 @@ class RelToSqlConverterTest {
         .throws_("Unsupported unparse: IS NOT FALSE");
   }
 
-  @Test
-  @Disabled("broken by SAP changes")
+  @Test @Disabled("broken by SAP changes")
   void testMerge() {
     final String sql1 = "merge into \"DEPT\" as \"t\"\n"
         + "using \"DEPT\" as \"s\"\n"
@@ -10396,8 +10394,7 @@ class RelToSqlConverterTest {
    * <a href="https://issues.apache.org/jira/browse/CALCITE-3593">[CALCITE-3593]
    * RelToSqlConverter changes target of ambiguous HAVING clause with a Project
    * on Filter on Aggregate</a>. */
-  @Test
-  @Disabled("broken by SAP changes")
+  @Test @Disabled("broken by SAP changes")
   void testBigQueryHaving() {
     final String sql = ""
         + "SELECT \"DEPTNO\" - 10 \"DEPTNO\"\n"

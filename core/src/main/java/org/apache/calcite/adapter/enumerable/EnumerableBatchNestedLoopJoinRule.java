@@ -16,10 +16,6 @@
  */
 package org.apache.calcite.adapter.enumerable;
 
-import java.util.function.Predicate;
-
-import java.util.function.Supplier;
-
 import org.apache.calcite.adapter.jdbc.JdbcConvention;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptRuleCall;
@@ -49,6 +45,8 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 /** Rule to convert a {@link LogicalJoin} to an {@link EnumerableBatchNestedLoopJoin}.
  * You may provide a custom config to convert other nodes that extend {@link Join}.
@@ -98,8 +96,7 @@ public class EnumerableBatchNestedLoopJoinRule
 
   private static class HasSingleJdbcSource implements Predicate<RelNode> {
     private JdbcConvention convention = null;
-    @Override
-    public boolean test(RelNode node) {
+    @Override public boolean test(RelNode node) {
       for (RelTrait trait : node.getTraitSet()) {
         if (trait instanceof JdbcConvention) {
           JdbcConvention otherConvention = (JdbcConvention) trait;

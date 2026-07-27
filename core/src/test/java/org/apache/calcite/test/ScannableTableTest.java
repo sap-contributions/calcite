@@ -111,8 +111,7 @@ public class ScannableTableTest {
   }
 
   /** A filter on a {@link FilterableTable} with two columns (cooperative). */
-  @Test
-  @Disabled("broken by SAP changes")
+  @Test @Disabled("broken by SAP changes")
   void testFilterableTableCooperative() {
     final StringBuilder buf = new StringBuilder();
     final Table table = new BeatlesFilterableTable(buf, true);
@@ -131,8 +130,7 @@ public class ScannableTableTest {
   }
 
   /** A filter on a {@link FilterableTable} with two columns (noncooperative). */
-  @Test
-  @Disabled("broken by SAP changes")
+  @Test @Disabled("broken by SAP changes")
   void testFilterableTableNonCooperative() {
     final StringBuilder buf = new StringBuilder();
     final Table table = new BeatlesFilterableTable(buf, false);
@@ -150,8 +148,7 @@ public class ScannableTableTest {
 
   /** A filter on a {@link org.apache.calcite.schema.ProjectableFilterableTable}
    * with two columns (cooperative). */
-  @Test
-  @Disabled("broken by SAP changes")
+  @Test @Disabled("broken by SAP changes")
   void testProjectableFilterableCooperative() {
     final StringBuilder buf = new StringBuilder();
     final Table table = new BeatlesProjectableFilterableTable(buf, true);
@@ -170,8 +167,7 @@ public class ScannableTableTest {
         hasToString("returnCount=2, filter=<0, 4>, projects=[1, 0]"));
   }
 
-  @Test
-  @Disabled("broken by SAP changes")
+  @Test @Disabled("broken by SAP changes")
   void testProjectableFilterableNonCooperative() {
     final StringBuilder buf = new StringBuilder();
     final Table table = new BeatlesProjectableFilterableTable(buf, false);
@@ -189,8 +185,7 @@ public class ScannableTableTest {
 
   /** A filter on a {@link org.apache.calcite.schema.ProjectableFilterableTable}
    * with two columns, and a project in the query. (Cooperative)*/
-  @Test
-  @Disabled("broken by SAP changes")
+  @Test @Disabled("broken by SAP changes")
   void testProjectableFilterableWithProjectAndFilter() {
     final StringBuilder buf = new StringBuilder();
     final Table table = new BeatlesProjectableFilterableTable(buf, true);
@@ -209,8 +204,7 @@ public class ScannableTableTest {
 
   /** A filter on a {@link org.apache.calcite.schema.ProjectableFilterableTable}
    * with two columns, and a project in the query (NonCooperative). */
-  @Test
-  @Disabled("broken by SAP changes")
+  @Test @Disabled("broken by SAP changes")
   void testProjectableFilterableWithProjectFilterNonCooperative() {
     final StringBuilder buf = new StringBuilder();
     final Table table = new BeatlesProjectableFilterableTable(buf, false);
@@ -232,8 +226,7 @@ public class ScannableTableTest {
    * {@link org.apache.calcite.schema.ProjectableFilterableTable}. The table
    * refuses to execute the filter, so Calcite should add a pull up and
    * transform the filter (projecting the column needed by the filter). */
-  @Test
-  @Disabled("broken by SAP changes")
+  @Test @Disabled("broken by SAP changes")
   void testPFTableRefusesFilterCooperative() {
     final StringBuilder buf = new StringBuilder();
     final Table table = new BeatlesProjectableFilterableTable(buf, false);
@@ -249,8 +242,7 @@ public class ScannableTableTest {
         hasToString("returnCount=4, projects=[2, 0]"));
   }
 
-  @Test
-  @Disabled("broken by SAP changes")
+  @Test @Disabled("broken by SAP changes")
   void testPFPushDownProjectFilterInAggregateNoGroup() {
     final StringBuilder buf = new StringBuilder();
     final Table table = new BeatlesProjectableFilterableTable(buf, false);
@@ -264,8 +256,7 @@ public class ScannableTableTest {
         .returnsUnordered("M=1943");
   }
 
-  @Test
-  @Disabled("broken by SAP changes")
+  @Test @Disabled("broken by SAP changes")
   void testPFPushDownProjectFilterAggregateGroup() {
     final String sql = "select \"i\", count(*) as c\n"
         + "from \"s\".\"beatles\"\n"
@@ -287,8 +278,7 @@ public class ScannableTableTest {
             "i=6; C=1");
   }
 
-  @Test
-  @Disabled("broken by SAP changes")
+  @Test @Disabled("broken by SAP changes")
   void testPFPushDownProjectFilterAggregateNested() {
     final StringBuilder buf = new StringBuilder();
     final String sql = "select \"k\", count(*) as c\n"
@@ -339,8 +329,7 @@ public class ScannableTableTest {
    * <a href="https://issues.apache.org/jira/browse/CALCITE-458">[CALCITE-458]
    * ArrayIndexOutOfBoundsException when using just a single column in
    * interpreter</a>. */
-  @Test
-  @Disabled("broken by SAP changes")
+  @Test @Disabled("broken by SAP changes")
   void testPFTableRefusesFilterSingleColumn() {
     final StringBuilder buf = new StringBuilder();
     final Table table = new BeatlesProjectableFilterableTable(buf, false);
@@ -359,8 +348,7 @@ public class ScannableTableTest {
   /** Test case for
    * <a href="https://issues.apache.org/jira/browse/CALCITE-3405">[CALCITE-3405]
    * Prune columns for ProjectableFilterable when project is not simple mapping</a>. */
-  @Test
-  @Disabled("broken by SAP changes")
+  @Test @Disabled("broken by SAP changes")
   void testPushNonSimpleMappingProject() {
     final StringBuilder buf = new StringBuilder();
     final Table table = new BeatlesProjectableFilterableTable(buf, true);
@@ -384,8 +372,7 @@ public class ScannableTableTest {
   /** Test case for
    * <a href="https://issues.apache.org/jira/browse/CALCITE-3405">[CALCITE-3405]
    * Prune columns for ProjectableFilterable when project is not simple mapping</a>. */
-  @Test
-  @Disabled("broken by SAP changes")
+  @Test @Disabled("broken by SAP changes")
   void testPushSimpleMappingProject() {
     final StringBuilder buf = new StringBuilder();
     final Table table = new BeatlesProjectableFilterableTable(buf, true);
@@ -436,8 +423,7 @@ public class ScannableTableTest {
   /** Test case for
    * <a href="https://issues.apache.org/jira/browse/CALCITE-5019">[CALCITE-5019]
    * Avoid multiple scans when table is ProjectableFilterableTable</a>.*/
-  @Test
-  @Disabled("broken by SAP changes")
+  @Test @Disabled("broken by SAP changes")
   void testProjectableFilterableWithScanCounter() {
     final StringBuilder buf = new StringBuilder();
     final BeatlesProjectableFilterableTable table =

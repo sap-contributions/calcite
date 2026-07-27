@@ -1296,8 +1296,7 @@ public class RelBuilderTest {
     assertThat(root, hasTree(expected));
   }
 
-  @Test
-  @Disabled("broken by SAP changes")
+  @Test @Disabled("broken by SAP changes")
   void testAggregate2() {
     // Equivalent SQL:
     //   SELECT COUNT(*) AS c, SUM(mgr + 1) AS s
@@ -1801,8 +1800,7 @@ public class RelBuilderTest {
     assertThat(f1.apply(createBuilder()), hasTree(expected));
   }
 
-  @Test
-  @Disabled("broken by SAP changes")
+  @Test @Disabled("broken by SAP changes")
   void testAggregateFilter() {
     // Equivalent SQL:
     //   SELECT deptno, COUNT(*) FILTER (WHERE empno > 100) AS c
@@ -1857,8 +1855,7 @@ public class RelBuilderTest {
     }
   }
 
-  @Test
-  @Disabled("broken by SAP changes")
+  @Test @Disabled("broken by SAP changes")
   void testAggregateFilterNullable() {
     // Equivalent SQL:
     //   SELECT deptno, SUM(sal) FILTER (WHERE comm < 100) AS c
@@ -1911,8 +1908,7 @@ public class RelBuilderTest {
     assertThat(root, hasTree(expected));
   }
 
-  @Test
-  @Disabled("broken by SAP changes")
+  @Test @Disabled("broken by SAP changes")
   void testAggregateProjectWithExpression() {
     final Function<RelBuilder, RelNode> f = builder ->
         builder.scan("EMP")
@@ -1943,8 +1939,7 @@ public class RelBuilderTest {
    * away expressions that are not used.
    *
    * @see RelBuilder.Config#pruneInputOfAggregate */
-  @Test
-  @Disabled("broken by SAP changes")
+  @Test @Disabled("broken by SAP changes")
   void testAggregateProjectPrune() {
     // SELECT deptno, SUM(sal) FILTER (WHERE b)
     // FROM (
@@ -1992,8 +1987,7 @@ public class RelBuilderTest {
    * we remove the project (rather than projecting zero fields, which
    * would be wrong), and (b) if the same aggregate function is used
    * twice, we add a project on top. */
-  @Test
-  @Disabled("broken by SAP changes")
+  @Test @Disabled("broken by SAP changes")
   void testAggregateProjectPruneEmpty() {
     // SELECT COUNT(*) AS C, COUNT(*) AS C2 FROM (
     //  SELECT deptno, empno + 10, sal, job = 'CLERK' AS b
@@ -2291,8 +2285,7 @@ public class RelBuilderTest {
     assertThat(root, hasTree(expected));
   }
 
-  @Test
-  @Disabled("broken by SAP changes")
+  @Test @Disabled("broken by SAP changes")
   void testDistinctEmpty() {
     // Is a relation with zero columns distinct?
     // What about if we know there are zero rows?
@@ -4374,8 +4367,7 @@ public class RelBuilderTest {
 
   /** Tests {@link org.apache.calcite.tools.RelRunner} for a table scan + filter
    * query. */
-  @Test
-  @Disabled("broken by SAP changes")
+  @Test @Disabled("broken by SAP changes")
   void testRun() throws Exception {
     // Equivalent SQL:
     //   SELECT * FROM EMP WHERE DEPTNO = 20

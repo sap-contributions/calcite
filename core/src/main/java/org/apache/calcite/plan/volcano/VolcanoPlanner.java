@@ -89,10 +89,9 @@ import java.util.regex.Pattern;
 import static com.google.common.base.Preconditions.checkArgument;
 
 import static org.apache.calcite.linq4j.Nullness.castNonNull;
+import static org.apache.calcite.runtime.Hook.AFTER_OPTIMIZATION;
 
 import static java.util.Objects.requireNonNull;
-
-import static org.apache.calcite.runtime.Hook.AFTER_OPTIMIZATION;
 
 /**
  * VolcanoPlanner optimizes queries by transforming expressions selectively

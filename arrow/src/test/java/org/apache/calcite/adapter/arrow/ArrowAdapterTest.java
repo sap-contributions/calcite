@@ -30,6 +30,7 @@ import org.apache.calcite.util.Sources;
 import com.google.common.collect.ImmutableMap;
 
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
@@ -923,8 +924,7 @@ class ArrowAdapterTest {
         .explainContains(plan1);
   }
 
-  @Test
-  @Disabled("broken by SAP changes")
+  @Test @Disabled("broken by SAP changes")
   void testAggWithoutAggFunctions() {
     String sql = "select DISTINCT(\"intField\") as \"dep\" from arrowdata";
     String plan = "PLAN=EnumerableAggregate(group=[{0}])\n"

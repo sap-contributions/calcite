@@ -75,8 +75,7 @@ class RelToSqlConverterStructsTest {
   /** Test case for
    * <a href="https://issues.apache.org/jira/browse/CALCITE-6218">[CALCITE-6218]
    * RelToSqlConverter fails to convert correlated lateral joins</a>. */
-  @Test
-  @Disabled("broken by SAP correlate changes")
+  @Test @Disabled("broken by SAP correlate changes")
   void testUncollectLateralJoin() {
     final String query = "select \"a\",\n"
         + "\"x\"\n"
